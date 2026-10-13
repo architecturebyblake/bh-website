@@ -1,7 +1,4 @@
 # Blake Hurst Architectural Design website
 
-- `content/` project and page text (edited through /admin)
-- `images/uploads/` photos
-- `static/` pages that are plain HTML
-- `templates/` page layouts, `build.js` generates the site into `dist/`
-- `admin/` the editing page (Decap CMS)
+- `site/` the website (plain HTML pages and photos). Netlify publishes this folder as is.
+- `site/admin/` the click-to-edit page: open `/admin/`, log in with GitHub, click any text or photo to change it, then press "Save & publish".

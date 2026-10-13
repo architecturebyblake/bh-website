@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Edit your website</title>
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="editor.css">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Poppins:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<div id="login" class="center">
+  <div class="card">
+    <img src="/images/uploads/ce5e5811614ff9664317c23d77206e5a.png" alt="Blake Hurst Architectural Design" class="logo">
+    <h1>Edit your website</h1>
+    <p>Sign in with your GitHub account. Then click any text or photo on your real pages to change it.</p>
+    <button id="btnLogin" class="primary big">Log in with GitHub</button>
+    <p id="loginMsg" class="msg"></p>
+  </div>
+</div>
+
+<div id="app" hidden>
+  <header id="bar">
+    <div class="row">
+      <label class="sel"><span>Page</span><select id="pageSel" aria-label="Choose a page to edit"></select></label>
+      <div id="slideCtl" class="grp" hidden><span>Slide</span><button id="slPrev" aria-label="Previous slide">‹</button><b id="slNo">1/1</b><button id="slNext" aria-label="Next slide">›</button></div>
+      <span class="spacer"></span>
+      <span id="status" role="status"></span>
+      <button id="btnAdd" hidden>+ Add project</button>
+      <button id="btnDel" hidden class="danger">Delete project</button>
+      <button id="btnTitle">Page title</button>
+      <button id="btnUndo">Undo</button>
+      <button id="btnSave" class="primary">Save &amp; publish</button>
+      <button id="btnOut" class="ghost">Log out</button>
+    </div>
+    <div id="tip">Click any text to type. Click a photo to replace it. Use the small bar that appears to move, copy or delete items. Nothing goes live until you press <b>Save &amp; publish</b>.</div>
+  </header>
+  <iframe id="frame" title="Your website"></iframe>
+</div>
+<input type="file" id="file" accept="image/*" hidden>
+<script src="editor.js"></script>
+</body>
+</html>

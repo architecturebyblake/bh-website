@@ -1,6 +1,5 @@
 [build]
-  command = "node build.js"
-  publish = "dist"
+  publish = "site"
 
 [[headers]]
   for = "/images/*"
@@ -11,3 +10,4 @@
   for = "/admin/*"
   [headers.values]
     X-Robots-Tag = "noindex"
+    Cache-Control = "no-cache"

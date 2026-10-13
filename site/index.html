@@ -20,22 +20,15 @@ a{color:inherit;text-decoration:none}a:hover{color:#4F6659}
   0% { opacity: 0; }
   100% { opacity: 1; }
 }
-@keyframes slide {
-  0% { opacity: 0; }
-  4% { opacity: 1; }
-  25% { opacity: 1; }
-  29% { opacity: 0; }
-  100% { opacity: 0; }
-}
 .splash { animation: splash 3.6s ease both; pointer-events: none; }
 .banner { animation: fadein 1s ease 2.8s both; }
 .wordmark { animation: fadein 2s ease 3.7s both; }
-.slide { animation: slide 28s linear infinite both; }
+.slide { opacity: 0; transition: opacity 1.12s ease; }
+.slide.on { opacity: 1; }
 @media (prefers-reduced-motion: reduce) {
   .splash { display: none; }
   .banner, .wordmark { animation: none !important; }
-  .slide { animation: none !important; opacity: 0; }
-  .s1 { opacity: 1 !important; }
+  .slide { transition: none; }
 }
 
 .dd a{display:flex;align-items:center;justify-content:center;min-height:2.75rem;font-family:'Poppins',sans-serif;font-size:.75rem;font-weight:400;letter-spacing:.14em;text-transform:uppercase;color:#4A5650;white-space:nowrap}
@@ -58,19 +51,19 @@ img{max-width:100%}
 
 <div style="position: relative; height: 100vh; min-height: 38rem; overflow: hidden; background: #1C2421; color: #1C2421; font-family: 'Hanken Grotesk', sans-serif; font-size: 1.0625rem">
 
-<div class="slide s1" style="position: absolute; inset: 0; background: #CDD4CB; animation-delay: -1.12s">
+<div class="slide s1 on" style="position: absolute; inset: 0; background: #CDD4CB">
 <img src="images/uploads/b7af47b940d3451bbabfe932ba785d14.jpg" alt="Modern single-story home with warm wood siding and black roof, set among trees and boulders at dusk" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 62%; display: block">
 <div style="position: absolute; left: 1.5rem; bottom: 1.5rem; background: rgba(229,229,229,0.5); color: #FFFFFF; text-shadow: 0 1px 4px rgba(0,0,0,0.55); padding: 0.75rem 1rem"><span style="font-family: 'Newsreader', serif; font-size: 1.25rem">The Still House</span> <span style="font-size: 0.9375rem; color: #FFFFFF">· Reading, PA</span></div>
 </div>
-<div class="slide" style="position: absolute; inset: 0; background: #DCE1DA; animation-delay: 5.88s">
+<div class="slide" style="position: absolute; inset: 0; background: #DCE1DA">
 <img src="images/uploads/0c73a38717b896f0ba4ab1d7ae4efce2.jpg" alt="Two-story home with stone and dark siding, lit windows and landscaping at sunset" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 55%; display: block">
 <div style="position: absolute; left: 1.5rem; bottom: 1.5rem; background: rgba(229,229,229,0.5); color: #FFFFFF; text-shadow: 0 1px 4px rgba(0,0,0,0.55); padding: 0.75rem 1rem"><span style="font-family: 'Newsreader', serif; font-size: 1.25rem">The Gallery House</span> <span style="font-size: 0.9375rem; color: #FFFFFF">· Wayne, PA</span></div>
 </div>
-<div class="slide" style="position: absolute; inset: 0; background: #BFC8BE; animation-delay: 12.88s">
+<div class="slide" style="position: absolute; inset: 0; background: #BFC8BE">
 <img src="images/uploads/fb200602aa649629e60e499a859b63c7.jpg" alt="Single-story brick home with black vertical siding and a wood front door, lit landscaping at dusk" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 60%; display: block">
 <div style="position: absolute; left: 1.5rem; bottom: 1.5rem; background: rgba(229,229,229,0.5); color: #FFFFFF; text-shadow: 0 1px 4px rgba(0,0,0,0.55); padding: 0.75rem 1rem"><span style="font-family: 'Newsreader', serif; font-size: 1.25rem">Mid-Century Rambler</span> <span style="font-size: 0.9375rem; color: #FFFFFF">· Reading, PA</span></div>
 </div>
-<div class="slide" style="position: absolute; inset: 0; background: #D3D9D1; animation-delay: 19.88s">
+<div class="slide" style="position: absolute; inset: 0; background: #D3D9D1">
 <img src="images/uploads/29ee66f082adbfdfe4e428b6b268291c.jpg" alt="Modern home with dark vertical siding, a sloped roof and large lit windows in a snowy evergreen forest" style="position: absolute; left: 0; right: 0; top: 4.5rem; width: 100%; height: calc(100% - 4.5rem); object-fit: cover; object-position: 50% 0%; display: block">
 <div style="position: absolute; left: 1.5rem; bottom: 1.5rem; background: rgba(229,229,229,0.5); color: #FFFFFF; text-shadow: 0 1px 4px rgba(0,0,0,0.55); padding: 0.75rem 1rem"><span style="font-family: 'Newsreader', serif; font-size: 1.25rem">The Hideout</span> <span style="font-size: 0.9375rem; color: #FFFFFF">· Reading, PA</span></div>
 
@@ -150,6 +143,14 @@ nvs.forEach(function(n){
 });
 document.addEventListener('click',function(e){if(!e.target.closest||!e.target.closest('.nv'))closeAll()});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeAll()});
+})();
+</script>
+<script>
+(function(){
+var slides=[].slice.call(document.querySelectorAll('.slide'));
+if(slides.length<2||window.__EDIT__||(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches))return;
+var i=0;
+setInterval(function(){slides[i].classList.remove('on');i=(i+1)%slides.length;slides[i].classList.add('on')},7000);
 })();
 </script>
 </body>

@@ -1,0 +1,646 @@
+/* Visual editor for the Blake Hurst website.
+ * Loads the real pages in a frame, lets you edit text/photos in place, and
+ * publishes all changes to GitHub in one commit (Netlify then rebuilds the site).
+ */
+(function () {
+  'use strict';
+  var CFG = { owner: 'architecturebyblake', repo: 'bh-website', branch: 'main', root: 'site' };
+  var API = 'https://api.github.com';
+  var $ = function (s) { return document.querySelector(s); };
+
+  var NAMES = {
+    'index.html': 'Home', 'Profile.html': 'The Firm: Profile', 'Services.html': 'The Firm: Services',
+    'People.html': 'The Firm: People', 'Contact.html': 'Contact', 'Inquiries.html': 'Contact: Inquiries',
+    'Social.html': 'Contact: Social (Instagram)', 'Places.html': 'Contact: Places We Serve',
+    'NewHomes.html': 'Portfolio: New Homes', 'Additions.html': 'Portfolio: Additions',
+    'Renovations.html': 'Portfolio: Interior Renovations', 'Design.html': 'In Process: In Design',
+    'InConstruction.html': 'In Process: Under Construction', 'Visualizations.html': 'In Process: Visualizations'
+  };
+  var LISTINGS = ['NewHomes.html', 'Additions.html', 'Renovations.html'];
+
+  var token = null;
+  try { token = sessionStorage.getItem('bh_token'); } catch (e) {}
+  var S = {
+    files: [],            // html page names in the repo (and staged new ones)
+    pages: {},            // name -> { html, baseline, isNew }
+    current: null,
+    pending: {},          // repo path -> Blob (photos not yet published)
+    urlToPath: {},        // blob: url -> repo path
+    pathToUrl: {},
+    deleted: {},          // page name -> true
+    undo: [],
+    frame: null, doc: null, win: null, toolbar: null, selEl: null, busy: false
+  };
+
+  // ---------------------------------------------------------------- helpers
+  function status(msg, kind) {
+    var el = $('#status'); el.textContent = msg || ''; el.style.color = kind === 'err' ? '#f2b3a6' : '';
+  }
+  function slugify(t) { return String(t).toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }
+  function prettyName(n) {
+    if (NAMES[n]) return NAMES[n];
+    return n.replace(/\.html$/, '').replace(/-/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+  }
+  function b64(blobOrText) {
+    return new Promise(function (res, rej) {
+      var blob = typeof blobOrText === 'string' ? new Blob([blobOrText], { type: 'text/plain;charset=utf-8' }) : blobOrText;
+      var r = new FileReader();
+      r.onload = function () { res(String(r.result).split(',')[1] || ''); };
+      r.onerror = rej; r.readAsDataURL(blob);
+    });
+  }
+
+  // ---------------------------------------------------------------- GitHub
+  function api(path, opts) {
+    opts = opts || {};
+    var headers = Object.assign({ Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json' }, opts.headers || {});
+    if (opts.body) headers['Content-Type'] = 'application/json';
+    return fetch(API + path, { method: opts.method || 'GET', headers: headers, body: opts.body }).then(function (r) {
+      if (r.status === 401) { logout(); throw new Error('Your login expired. Please log in again.'); }
+      if (!r.ok) { return r.text().then(function (t) { var e = new Error(t || r.statusText); e.status = r.status; throw e; }); }
+      return r.status === 204 ? null : (opts.raw ? r.text() : r.json());
+    });
+  }
+  var repoPath = function (p) { return '/repos/' + CFG.owner + '/' + CFG.repo + p; };
+
+  function login() {
+    return new Promise(function (resolve, reject) {
+      var site = location.host.split(':')[0];
+      var url = 'https://api.netlify.com/auth?provider=github&site_id=' + encodeURIComponent(site) + '&scope=repo';
+      var w = window.open(url, 'bh-auth', 'width=620,height=760');
+      if (!w) { reject(new Error('Your browser blocked the login window. Allow pop-ups for this site and try again.')); return; }
+      var done = false;
+      function onMsg(e) {
+        if (e.origin !== 'https://api.netlify.com') return;
+        if (e.data === 'authorizing:github') { w.postMessage('authorizing:github', e.origin); return; }
+        var m = typeof e.data === 'string' && /^authorization:github:(success|error):([\s\S]*)$/.exec(e.data);
+        if (!m) return;
+        done = true; window.removeEventListener('message', onMsg);
+        try { w.close(); } catch (x) {}
+        if (m[1] === 'success') { try { resolve(JSON.parse(m[2]).token); } catch (x) { reject(new Error('Login failed.')); } }
+        else reject(new Error('GitHub did not allow the login.'));
+      }
+      window.addEventListener('message', onMsg);
+      var t = setInterval(function () { if (w.closed) { clearInterval(t); if (!done) { window.removeEventListener('message', onMsg); reject(new Error('Login window was closed.')); } } }, 600);
+    });
+  }
+  function logout() {
+    try { sessionStorage.removeItem('bh_token'); } catch (e) {}
+    token = null; location.reload();
+  }
+
+  // ---------------------------------------------------------------- boot
+  function boot() {
+    $('#btnLogin').onclick = function () {
+      $('#loginMsg').textContent = '';
+      login().then(function (t) {
+        token = t; try { sessionStorage.setItem('bh_token', t); } catch (e) {}
+        return start();
+      }).catch(function (e) { $('#loginMsg').textContent = e.message; });
+    };
+    if (token) start().catch(function (e) { $('#loginMsg').textContent = e.message; $('#login').hidden = false; $('#app').hidden = true; });
+  }
+
+  function start() {
+    return api(repoPath('')).then(function (r) {
+      if (!r.permissions || !r.permissions.push) throw new Error('This GitHub account does not have permission to edit the site.');
+      return api(repoPath('/git/trees/' + CFG.branch + '?recursive=1'));
+    }).then(function (tree) {
+      var pre = CFG.root + '/';
+      S.files = tree.tree.filter(function (t) { return t.type === 'blob' && t.path.indexOf(pre) === 0 && /^[^/]+\.html$/.test(t.path.slice(pre.length)); })
+        .map(function (t) { return t.path.slice(pre.length); });
+      $('#login').hidden = true; $('#app').hidden = false;
+      wireBar(); fillSelect();
+      return openPage('index.html');
+    });
+  }
+
+  function fillSelect(selected) {
+    var sel = $('#pageSel'); sel.innerHTML = '';
+    var order = ['index.html', 'Profile.html', 'Services.html', 'People.html', 'NewHomes.html', 'Additions.html', 'Renovations.html', 'Design.html', 'InConstruction.html', 'Visualizations.html', 'Contact.html', 'Inquiries.html', 'Social.html', 'Places.html'];
+  var main = order.filter(function (n) { return S.files.indexOf(n) >= 0; });
+    var projects = S.files.filter(function (n) { return order.indexOf(n) < 0; }).sort();
+    function add(group, names) {
+      if (!names.length) return;
+      var g = document.createElement('optgroup'); g.label = group;
+      names.forEach(function (n) { var o = document.createElement('option'); o.value = n; o.textContent = prettyName(n) + (S.pages[n] && S.pages[n].isNew ? ' (new, not published)' : ''); g.appendChild(o); });
+      sel.appendChild(g);
+    }
+    add('Pages', main); add('Projects', projects);
+    sel.value = selected || S.current || 'index.html';
+  }
+
+  function wireBar() {
+    if (wireBar.done) return; wireBar.done = true;
+    $('#pageSel').onchange = function () { openPage(this.value); };
+    $('#btnSave').onclick = save;
+    $('#btnOut').onclick = function () { if (dirtyList().length && !confirm('You have changes that are not published. Log out anyway?')) return; logout(); };
+    $('#btnUndo').onclick = undo;
+    $('#btnTitle').onclick = editPageTitle;
+    $('#btnAdd').onclick = addProject;
+    $('#btnDel').onclick = deleteProject;
+    $('#slPrev').onclick = function () { stepSlide(-1); };
+    $('#slNext').onclick = function () { stepSlide(1); };
+    window.addEventListener('beforeunload', function (e) { if (dirtyList().length) { e.preventDefault(); e.returnValue = ''; } });
+  }
+
+  // ---------------------------------------------------------------- serialize
+  function serializeDoc(doc) {
+    var clone = doc.documentElement.cloneNode(true);
+    clone.querySelectorAll('[data-ed]').forEach(function (n) { n.remove(); });
+    clone.querySelectorAll('*').forEach(function (el) {
+      el.removeAttribute('contenteditable');
+      Array.prototype.slice.call(el.attributes).forEach(function (a) { if (a.name.indexOf('data-ed') === 0) el.removeAttribute(a.name); });
+    });
+    clone.querySelectorAll('.nv.open').forEach(function (n) { n.classList.remove('open'); if (!n.getAttribute('class')) n.removeAttribute('class'); });
+    clone.querySelectorAll('.nv [aria-expanded]').forEach(function (n) { n.setAttribute('aria-expanded', 'false'); });
+    var slides = clone.querySelectorAll('.slide');
+    slides.forEach(function (s, i) { s.classList.toggle('on', i === 0); });
+    var html = '<!doctype html>\n' + clone.outerHTML + '\n';
+    Object.keys(S.urlToPath).forEach(function (u) { html = html.split(u).join(S.urlToPath[u]); });
+    return html;
+  }
+  function norm(t) { return String(t || '').replace(/\s+/g, ' ').trim(); }
+  function flushCurrent() {
+    if (S.current && S.doc && S.pages[S.current]) S.pages[S.current].html = serializeDoc(S.doc);
+  }
+  function dirtyList() {
+    flushCurrent();
+    var out = [];
+    Object.keys(S.pages).forEach(function (n) {
+      var p = S.pages[n];
+      if (S.deleted[n]) return;
+      if (p.isNew || norm(p.html) !== norm(p.baseline)) out.push(n);
+    });
+    return out;
+  }
+  function refreshDirty() {
+    var n = dirtyList().length + Object.keys(S.deleted).length;
+    $('#btnSave').textContent = n ? 'Save & publish (' + n + ')' : 'Save & publish';
+  }
+
+  // ---------------------------------------------------------------- page loading
+  function getHtml(name) {
+    if (S.pages[name]) return Promise.resolve(S.pages[name].html);
+    return fetch('/' + name, { cache: 'no-store' }).then(function (r) {
+      if (!r.ok) throw new Error('Could not load ' + name);
+      return r.text();
+    }).then(function (t) { S.pages[name] = { html: t, baseline: t, isNew: false, loaded: false }; return t; });
+  }
+
+  function openPage(name) {
+    flushCurrent();
+    status('Loading…');
+    return getHtml(name).then(function (html) {
+      S.current = name; S.undo = [];
+      fillSelect(name);
+      var h = html;
+      Object.keys(S.pathToUrl).forEach(function (p) { if (h.indexOf(p) >= 0) h = h.split(p).join(S.pathToUrl[p]); });
+      h = h.replace(/<head([^>]*)>/i, '<head$1><base href="/" data-ed><script data-ed>window.__EDIT__=1<\/script>');
+      return new Promise(function (resolve) {
+        var f = $('#frame');
+        f.onload = function () { f.onload = null; try { onFrame(f, name); } catch (e) { console.error(e); status('Could not start editing this page: ' + e.message, 'err'); } refreshDirty(); resolve(); };
+        f.srcdoc = h;
+      });
+    }).catch(function (e) { status(e.message, 'err'); });
+  }
+
+  // ---------------------------------------------------------------- frame setup
+  var SKIP = { SCRIPT: 1, STYLE: 1, NOSCRIPT: 1, BUTTON: 1, INPUT: 1, TEXTAREA: 1, SELECT: 1, OPTION: 1, SVG: 1, svg: 1, TITLE: 1, HEAD: 1 };
+  var PLAIN = (function () { var d = document.createElement('div'); try { d.contentEditable = 'plaintext-only'; } catch (e) {} return d.contentEditable === 'plaintext-only'; })();
+
+  function onFrame(f, name) {
+    S.frame = f; S.doc = f.contentDocument; S.win = f.contentWindow; S.selEl = null;
+    var doc = S.doc, win = S.win;
+    var pg = S.pages[name];
+    // restore blob url -> path mapping is done through serializeDoc, nothing to do here.
+    if (!pg.loaded) { pg.loaded = true; pg.baseline = serializeDoc(doc); if (!pg.isNew) pg.html = pg.baseline; }
+    if (pg.isNew && pg.baseline === undefined) pg.baseline = '';
+    // editor styles
+    var st = doc.createElement('style'); st.setAttribute('data-ed', '');
+    st.textContent = [
+      '.splash{display:none!important}',
+      '.banner,.wordmark{animation:none!important;opacity:1!important}',
+      '.slide{transition:none!important;opacity:0!important}.slide.on{opacity:1!important;z-index:2}',
+      '[data-ed-t]{cursor:text;outline:1px dashed transparent;outline-offset:3px;transition:outline-color .15s}',
+      '[data-ed-t]:hover{outline-color:rgba(79,102,89,.7)}',
+      '[data-ed-t]:focus{outline:2px solid #4F6659}',
+      '[data-ed-i]{cursor:pointer;outline:2px solid transparent;outline-offset:-2px}',
+      '[data-ed-i]:hover{outline-color:rgba(79,102,89,.85)}',
+      '[data-ed-sel]{outline:2px solid #4F6659!important;outline-offset:-2px}',
+      '[data-ed-t][data-ed-sel]{outline-offset:3px}',
+      '#edtb[hidden]{display:none!important}',
+      '#edtb{position:absolute;z-index:2147483000;display:flex;flex-wrap:wrap;gap:2px;background:#1C2421;padding:3px;box-shadow:0 4px 18px rgba(0,0,0,.35);max-width:calc(100vw - 16px);font-family:system-ui,sans-serif}',
+      '#edtb button{all:unset;box-sizing:border-box;color:#F3F4F1;font:500 13px/1 system-ui,sans-serif;padding:8px 10px;cursor:pointer;white-space:nowrap}',
+      '#edtb button:hover{background:#4F6659}',
+      '#edtb button.d:hover{background:#9A3412}',
+      '#edtb i{width:1px;background:rgba(255,255,255,.25);margin:3px 2px}'
+    ].join('\n');
+    doc.head.appendChild(st);
+    markEditable(doc);
+    var tb = doc.createElement('div'); tb.id = 'edtb'; tb.setAttribute('data-ed', ''); tb.hidden = true;
+    doc.documentElement.appendChild(tb); S.toolbar = tb;
+    doc.addEventListener('click', onClick, true);
+    doc.addEventListener('keydown', onKey, true);
+    doc.addEventListener('paste', onPaste, true);
+    doc.addEventListener('input', function () { refreshDirty(); }, true);
+    win.addEventListener('resize', function () { if (S.selEl) placeToolbar(); });
+    // contextual top-bar buttons
+    var isListing = LISTINGS.indexOf(name) >= 0;
+    var isProject = !!projectListing(doc);
+    $('#btnAdd').hidden = !isListing;
+    $('#btnDel').hidden = !isProject;
+    var slides = doc.querySelectorAll('.slide');
+    $('#slideCtl').hidden = !slides.length;
+    if (slides.length) slideLabel();
+    status('');
+    refreshDirty();
+  }
+
+  function markEditable(doc) {
+    doc.body.querySelectorAll('*').forEach(function (el) {
+      var tag = el.tagName;
+      if (SKIP[tag] || el.closest('header,svg,.splash,[data-ed],button')) return;
+      var hasText = Array.prototype.some.call(el.childNodes, function (n) { return n.nodeType === 3 && n.nodeValue.trim(); });
+      if (hasText) {
+        el.setAttribute('contenteditable', PLAIN ? 'plaintext-only' : 'true');
+        el.setAttribute('data-ed-t', '');
+      }
+      if (isImgLike(el) && !el.closest('header')) el.setAttribute('data-ed-i', '');
+    });
+  }
+  function bgUrl(el) { var s = el.getAttribute && el.getAttribute('style') || ''; var m = /background(?:-image)?:[^;]*url\(([^)]+)\)/i.exec(s); return m ? m[1] : null; }
+  function isImgLike(el) { return el.tagName === 'IMG' || !!bgUrl(el); }
+
+  // ---------------------------------------------------------------- events
+  function onKey(e) {
+    var t = e.target;
+    if (e.key === 'Enter' && t.closest && t.closest('[data-ed-t]')) { e.preventDefault(); t.blur(); }
+    if (e.key === 'Escape') { hideToolbar(); }
+  }
+  function onPaste(e) {
+    var t = e.target; if (!t.closest || !t.closest('[data-ed-t]')) return;
+    e.preventDefault();
+    var txt = (e.clipboardData || window.clipboardData).getData('text/plain').replace(/\s*\n+\s*/g, ' ');
+    S.doc.execCommand('insertText', false, txt);
+  }
+  function internalPage(href) {
+    if (!href) return null;
+    var h = href.split('#')[0].split('?')[0].replace(/^\//, '');
+    return /^[^\/:]+\.html$/.test(h) ? h : null;
+  }
+  function onClick(e) {
+    var t = e.target;
+    if (t.closest && t.closest('[data-ed]')) return;
+    var a = t.closest && t.closest('a');
+    var inNav = t.closest && t.closest('header,.dd');
+    if (inNav) {
+      if (a) {
+        e.preventDefault(); e.stopPropagation();
+        var pg = internalPage(a.getAttribute('href'));
+        if (pg && S.files.indexOf(pg) >= 0) openPage(pg);
+      }
+      return; // let nav buttons toggle their menus
+    }
+    if (a) e.preventDefault();
+    e.stopPropagation();
+    var el = null;
+    var img = t.closest('[data-ed-i]');
+    if (img) el = img;
+    else { var tx = t.closest('[data-ed-t]'); if (tx) el = tx; }
+    if (!el) { var it = findItem(t); if (it) el = it; }
+    if (el) select(el); else hideToolbar();
+  }
+
+  // ---------------------------------------------------------------- items
+  function sig(el) { return el.tagName + '(' + Array.prototype.map.call(el.children, sig).join(',') + ')'; }
+  function similar(a, b) {
+    if (a === b || a.tagName !== b.tagName) return false;
+    if ((a.classList[0] || '') !== (b.classList[0] || '')) return false;
+    if (sig(a) !== sig(b)) return false;
+    if (!a.children.length && a.tagName !== 'P' && a.getAttribute('style') !== b.getAttribute('style')) return false;
+    return true;
+  }
+  function similarSiblings(el) {
+    var p = el.parentNode; if (!p) return [];
+    return Array.prototype.filter.call(p.children, function (c) { return !c.hasAttribute('data-ed') && similar(el, c); });
+  }
+  function findItem(el) {
+    var n = el, body = S.doc.body;
+    while (n && n !== body && n !== S.doc.documentElement) {
+      var p = n.parentNode;
+      if (p && p !== body && !n.hasAttribute('data-ed') && similarSiblings(n).length >= 1) return n;
+      n = p;
+    }
+    return null;
+  }
+
+  // ---------------------------------------------------------------- toolbar
+  function hideToolbar() {
+    if (S.selEl) S.selEl.removeAttribute('data-ed-sel');
+    S.selEl = null; if (S.toolbar) S.toolbar.hidden = true;
+  }
+  function btn(label, fn, cls) {
+    var b = S.doc.createElement('button'); b.type = 'button'; b.textContent = label; if (cls) b.className = cls;
+    b.addEventListener('mousedown', function (e) { e.preventDefault(); });
+    b.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); fn(); });
+    return b;
+  }
+  function sep() { return S.doc.createElement('i'); }
+  function select(el) {
+    if (S.selEl && S.selEl !== el) S.selEl.removeAttribute('data-ed-sel');
+    S.selEl = el; el.setAttribute('data-ed-sel', '');
+    var tb = S.toolbar; tb.innerHTML = '';
+    var item = findItem(el);
+    var link = el.closest && el.closest('a');
+    if (isImgLike(el)) {
+      tb.appendChild(btn('Replace photo', function () { replacePhoto(el); }));
+      tb.appendChild(btn('Describe photo', function () { describePhoto(el); }));
+    }
+    if (link && link.getAttribute('href')) {
+      tb.appendChild(btn('Change link', function () { editLink(link); }));
+      var pg = internalPage(link.getAttribute('href'));
+      if (pg && S.files.indexOf(pg) >= 0) tb.appendChild(btn('Open page', function () { openPage(pg); }));
+    }
+    if (item) {
+      if (tb.children.length) tb.appendChild(sep());
+      tb.appendChild(btn('◀ Earlier', function () { moveItem(item, -1); }));
+      tb.appendChild(btn('Later ▶', function () { moveItem(item, 1); }));
+      tb.appendChild(btn('Duplicate', function () { duplicateItem(item); }));
+      tb.appendChild(btn('Delete', function () { deleteItem(item); }, 'd'));
+    }
+    if (!tb.children.length) { tb.hidden = true; return; }
+    tb.hidden = false; placeToolbar();
+  }
+  function placeToolbar() {
+    var el = S.selEl, tb = S.toolbar, w = S.win; if (!el || !el.isConnected) { hideToolbar(); return; }
+    var r = el.getBoundingClientRect();
+    var top = r.top + w.pageYOffset - tb.offsetHeight - 8;
+    if (top < w.pageYOffset + 4) top = Math.max(r.top + w.pageYOffset + 8, w.pageYOffset + 4);
+    var left = r.left + w.pageXOffset;
+    var maxLeft = S.doc.documentElement.clientWidth + w.pageXOffset - tb.offsetWidth - 8;
+    tb.style.top = top + 'px'; tb.style.left = Math.max(8, Math.min(left, maxLeft)) + 'px';
+  }
+
+  // ---------------------------------------------------------------- undo
+  function snap() {
+    var tb = S.toolbar; var sel = S.selEl;
+    S.undo.push(S.doc.body.innerHTML); if (S.undo.length > 40) S.undo.shift();
+  }
+  function undo() {
+    if (!S.doc || !S.undo.length) { status('Nothing to undo.'); return; }
+    hideToolbar();
+    S.doc.body.innerHTML = S.undo.pop();
+    markEditable(S.doc); refreshDirty(); status('Undone.');
+    if (S.doc.querySelector('.slide')) slideLabel();
+  }
+
+  // ---------------------------------------------------------------- actions
+  function afterChange() { markEditable(S.doc); refreshDirty(); if (S.selEl) placeToolbar(); }
+
+  function moveItem(item, dir) {
+    var sibs = similarSiblings(item).concat([item]);
+    sibs.sort(function (a, b) { return (a.compareDocumentPosition(b) & 4) ? -1 : 1; });
+    var i = sibs.indexOf(item), j = i + dir;
+    if (j < 0 || j >= sibs.length) { status(dir < 0 ? 'Already first.' : 'Already last.'); return; }
+    snap();
+    var other = sibs[j];
+    if (dir < 0) item.parentNode.insertBefore(item, other); else item.parentNode.insertBefore(item, other.nextSibling);
+    afterChange(); if (item.classList.contains('slide')) slideLabel();
+  }
+  function duplicateItem(item) {
+    snap();
+    var c = item.cloneNode(true);
+    c.querySelectorAll('[data-ed-sel]').forEach(function (n) { n.removeAttribute('data-ed-sel'); });
+    c.removeAttribute('data-ed-sel');
+    item.parentNode.insertBefore(c, item.nextSibling);
+    afterChange();
+    if (c.classList.contains('slide')) { setSlide(Array.prototype.indexOf.call(S.doc.querySelectorAll('.slide'), c)); }
+    var imgs = isImgLike(c) ? [c] : Array.prototype.filter.call(c.querySelectorAll('img'), function (x) { return !x.closest('header'); });
+    if (imgs.length === 1) { select(imgs[0]); replacePhoto(imgs[0]); } else { select(c.querySelector('[data-ed-t]') || c); }
+    status('Copied. Edit the copy.');
+  }
+  function deleteItem(item) {
+    if (item.classList.contains('slide') && S.doc.querySelectorAll('.slide').length < 2) { alert('A slideshow needs at least one slide.'); return; }
+    if (!confirm('Delete this item?')) return;
+    snap(); hideToolbar();
+    var wasSlide = item.classList.contains('slide');
+    var sibs = wasSlide ? S.doc.querySelectorAll('.slide') : null;
+    item.remove();
+    if (wasSlide) setSlide(0);
+    afterChange();
+  }
+
+  var picking = null;
+  function replacePhoto(el) {
+    var input = $('#file'); input.value = '';
+    var cur = el.tagName === 'IMG' ? (el.getAttribute('src') || '') : (bgUrl(el) || '');
+    var wantPng = /\.png(\?|$)/i.test(cur) || /^blob:/.test(cur) && S.urlToPath[cur] && /\.png$/.test(S.urlToPath[cur]);
+    input.onchange = function () {
+      var f = input.files && input.files[0]; if (!f) return;
+      status('Preparing photo…');
+      prepareImage(f, wantPng).then(function (r) {
+        snap();
+        S.pending[r.path] = r.blob; S.urlToPath[r.url] = r.path; S.pathToUrl[r.path] = r.url;
+        if (el.tagName === 'IMG') { el.removeAttribute('srcset'); el.setAttribute('src', r.url); }
+        else { el.setAttribute('style', el.getAttribute('style').replace(/url\([^)]+\)/i, 'url(' + r.url + ')')); }
+        status('Photo replaced. Remember to Save & publish.'); refreshDirty(); placeToolbar();
+      }).catch(function (e) { status('', ''); alert('That photo could not be used: ' + e.message); });
+    };
+    input.click();
+  }
+  function prepareImage(file, png) {
+    return createImageBitmap(file, { imageOrientation: 'from-image' }).then(function (bmp) {
+      var max = 2200, sc = Math.min(1, max / Math.max(bmp.width, bmp.height));
+      var w = Math.round(bmp.width * sc), h = Math.round(bmp.height * sc);
+      var cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+      var ctx = cv.getContext('2d');
+      if (!png) { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); }
+      ctx.drawImage(bmp, 0, 0, w, h);
+      return new Promise(function (res, rej) {
+        cv.toBlob(function (b) {
+          if (!b) { rej(new Error('could not convert the picture')); return; }
+          var ext = png ? 'png' : 'jpg';
+          var id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+          res({ blob: b, path: 'images/uploads/' + id + '.' + ext, url: URL.createObjectURL(b) });
+        }, png ? 'image/png' : 'image/jpeg', 0.86);
+      });
+    });
+  }
+  function describePhoto(el) {
+    var key = el.tagName === 'IMG' ? 'alt' : 'aria-label';
+    var v = prompt('Describe this photo in a short sentence. It helps people who use screen readers and helps Google.', el.getAttribute(key) || '');
+    if (v === null) return; snap(); el.setAttribute(key, v); refreshDirty();
+  }
+  function editLink(a) {
+    var v = prompt('Where should this link go?\nUse a web address (https://…), a page on this site (like Contact.html), or an email (mailto:you@example.com).', a.getAttribute('href') || '');
+    if (v === null) return; snap(); a.setAttribute('href', v.trim()); refreshDirty();
+  }
+  function editPageTitle() {
+    var t = S.doc.querySelector('title'); if (!t) return;
+    var v = prompt('Page title (shown on the browser tab and in Google results):', t.textContent);
+    if (v === null) return; snap();
+    t.textContent = v;
+    var m = S.doc.querySelector('meta[name="description"]'); if (m && /Blake Hurst Architectural Design, Reading, PA\.$/.test(m.content)) m.content = v.split('|')[0].trim() + ' | Blake Hurst Architectural Design, Reading, PA.';
+    refreshDirty();
+  }
+
+  // slides
+  function setSlide(i) {
+    var s = S.doc.querySelectorAll('.slide'); if (!s.length) return;
+    i = Math.max(0, Math.min(i, s.length - 1));
+    s.forEach(function (x, k) { x.classList.toggle('on', k === i); });
+    slideLabel();
+  }
+  function curSlide() { var s = Array.prototype.slice.call(S.doc.querySelectorAll('.slide')); var i = s.findIndex(function (x) { return x.classList.contains('on'); }); return { i: Math.max(i, 0), n: s.length }; }
+  function stepSlide(d) { var c = curSlide(); setSlide((c.i + d + c.n) % c.n); hideToolbar(); }
+  function slideLabel() { var c = curSlide(); $('#slideCtl').hidden = !c.n; $('#slNo').textContent = (c.i + 1) + ' / ' + c.n; }
+
+  // ---------------------------------------------------------------- projects
+  function projectListing(doc) {
+    var a = doc.querySelector('main > a[href$=".html"]');
+    if (!a) return null;
+    var h = a.getAttribute('href');
+    return LISTINGS.indexOf(h) >= 0 ? h : null;
+  }
+  function parse(html) { return new DOMParser().parseFromString(html, 'text/html'); }
+
+  function addProject() {
+    var listing = S.current;
+    var name = prompt('Name of the new project (for example: The Lake House):');
+    if (!name || !name.trim()) return; name = name.trim();
+    var slug = slugify(name); if (!slug) { alert('Please use letters or numbers in the name.'); return; }
+    var file = slug + '.html';
+    if (S.files.indexOf(file) >= 0 || S.pages[file]) { alert('A page called "' + file + '" already exists. Pick a different name.'); return; }
+    snap();
+    var doc = S.doc;
+    var first = doc.querySelector('main a[href$=".html"][style*="display: block"]');
+    if (!first) { alert('Could not find a project card to copy on this page.'); return; }
+    var templateFile = first.getAttribute('href');
+    getHtml(templateFile).then(function (tpl) {
+      var d = parse(tpl);
+      var t = d.querySelector('title'); if (t) t.textContent = name + ' | Blake Hurst Architectural Design';
+      var m = d.querySelector('meta[name="description"]'); if (m) m.setAttribute('content', name + ' | Blake Hurst Architectural Design, Reading, PA.');
+      var h1 = d.querySelector('main h1'); if (h1) h1.textContent = name;
+      var ps = d.querySelectorAll('main p[data-pm-slice], main > div p'); // About paragraphs
+      var paras = Array.prototype.filter.call(d.querySelectorAll('main p'), function (p) { return !/Tell us about your ideas/.test(p.textContent); });
+      paras.forEach(function (p, i) { p.removeAttribute('data-pm-slice'); p.textContent = i === 0 ? 'Write about the project here.' : 'Add a second paragraph, or delete this one.'; });
+      var tplHero = d.querySelector('main img');
+      var out = '<!doctype html>\n' + d.documentElement.outerHTML + '\n';
+      S.pages[file] = { html: out, baseline: '', isNew: true, loaded: true, tplImg: tplHero ? tplHero.getAttribute('src') : null };
+      S.files.push(file);
+      // card on the listing page
+      var card = first.cloneNode(true);
+      card.removeAttribute('data-ed-sel');
+      card.setAttribute('href', file);
+      var spans = card.querySelectorAll('span');
+      if (spans[0]) spans[0].textContent = name;
+      if (spans[1]) spans[1].textContent = '· Town, PA';
+      var tag = card.querySelector('p'); if (tag) tag.textContent = 'Add a one-line description.';
+      first.parentNode.insertBefore(card, first.nextSibling);
+      afterChange();
+      return openPage(file).then(function () { status('New project created. Replace the photos and fill in the details, then Save & publish.'); });
+    }).catch(function (e) { alert(e.message); });
+  }
+
+  function deleteProject() {
+    var name = S.current, listing = projectListing(S.doc);
+    if (!listing) return;
+    if (!confirm('Delete this project and its page? This removes it from your website when you Save & publish.')) return;
+    if (S.pages[name] && S.pages[name].isNew) { delete S.pages[name]; } else { S.deleted[name] = true; delete S.pages[name]; }
+    S.files = S.files.filter(function (f) { return f !== name; });
+    S.current = null;
+    openPage(listing).then(function () {
+      var card = S.doc.querySelector('main a[href="' + name + '"]');
+      if (card) { snap(); card.remove(); }
+      afterChange();
+      status('Project removed. Save & publish to make it final.');
+    });
+  }
+
+  // ---------------------------------------------------------------- save / publish
+  function footerOf(html) { var m = /<footer[\s\S]*?<\/footer>/i.exec(html); return m ? m[0] : null; }
+
+  function save() {
+    if (S.busy) return;
+    var dirty = dirtyList();
+    var del = Object.keys(S.deleted);
+    if (!dirty.length && !del.length) { status('Nothing to publish. No changes yet.'); return; }
+    // warn about new pages still using the template's photo
+    var warn = dirty.filter(function (n) { var p = S.pages[n]; return p.isNew && p.tplImg && p.html.indexOf(p.tplImg) >= 0; });
+    if (warn.length && !confirm('A new project page still shows another project\'s photos. Publish anyway?')) return;
+    S.busy = true; $('#btnSave').disabled = true; status('Publishing…');
+    var files = {};      // path -> { text | blob } or null (delete)
+    var result;
+    var footerNew = null;
+    dirty.forEach(function (n) {
+      var p = S.pages[n]; files[CFG.root + '/' + n] = { text: p.html };
+      var f = footerOf(p.html), fb = p.isNew ? null : footerOf(p.baseline);
+      if (!p.isNew && f && fb && f !== fb) footerNew = f;
+    });
+    del.forEach(function (n) { files[CFG.root + '/' + n] = null; });
+    var chain = Promise.resolve();
+    if (footerNew) {
+      // footer text is shared by every page: copy the edited footer everywhere
+      chain = chain.then(function () {
+        var others = S.files.filter(function (n) { return !files[CFG.root + '/' + n] && !S.deleted[n]; });
+        status('Updating the footer on every page…');
+        return Promise.all(others.map(function (n) {
+          return api(repoPath('/contents/' + CFG.root + '/' + encodeURIComponent(n) + '?ref=' + CFG.branch), { headers: { Accept: 'application/vnd.github.raw+json' }, raw: true }).then(function (txt) {
+            if (footerOf(txt)) files[CFG.root + '/' + n] = { text: txt.replace(/<footer[\s\S]*?<\/footer>/i, function () { return footerNew; }) };
+          });
+        })).then(function () {
+          dirty.forEach(function (n) { var p = S.pages[n]; if (footerOf(p.html)) { p.html = p.html.replace(/<footer[\s\S]*?<\/footer>/i, function () { return footerNew; }); files[CFG.root + '/' + n] = { text: p.html }; } });
+        });
+      });
+    }
+    chain.then(function () {
+      // photos that are actually used
+      var all = Object.keys(files).map(function (k) { return files[k] && files[k].text || ''; }).join('\n');
+      Object.keys(S.pending).forEach(function (p) { if (all.indexOf(p) >= 0) files[CFG.root + '/' + p] = { blob: S.pending[p] }; });
+      return commit(files, 'Website edit: ' + dirty.concat(del).join(', ').slice(0, 120));
+    }).then(function () {
+      dirty.forEach(function (n) { var p = S.pages[n]; p.baseline = p.html; p.isNew = false; });
+      del.forEach(function (n) { delete S.deleted[n]; });
+      Object.keys(S.pending).forEach(function (p) { if (files[CFG.root + '/' + p]) { /* keep url mapping so open pages still display */ } });
+      if (footerNew) Object.keys(S.pages).forEach(function (n) { var p = S.pages[n]; if (S.deleted[n]) return; ['html', 'baseline'].forEach(function (k) { if (p[k] && footerOf(p[k])) p[k] = p[k].replace(/<footer[\s\S]*?<\/footer>/i, function () { return footerNew; }); }); });
+      refreshDirty(); fillSelect();
+      status('Published. Your live site updates in about a minute.');
+    }).catch(function (e) {
+      status('', ''); alert('Could not publish: ' + (e.message || e).toString().slice(0, 300));
+    }).then(function () { S.busy = false; $('#btnSave').disabled = false; refreshDirty(); });
+  }
+
+  function commit(files, message, attempt) {
+    attempt = attempt || 0;
+    var paths = Object.keys(files);
+    var head, baseTree;
+    return api(repoPath('/git/ref/heads/' + CFG.branch)).then(function (ref) {
+      head = ref.object.sha;
+      return api(repoPath('/git/commits/' + head));
+    }).then(function (c) {
+      baseTree = c.tree.sha;
+      status('Uploading ' + paths.length + ' file' + (paths.length === 1 ? '' : 's') + '…');
+      return Promise.all(paths.map(function (p) {
+        var f = files[p];
+        if (f === null) return Promise.resolve({ path: p, mode: '100644', type: 'blob', sha: null });
+        if (f.sha) return Promise.resolve({ path: p, mode: '100644', type: 'blob', sha: f.sha });
+        var body = f.blob ? b64(f.blob).then(function (d) { return { content: d, encoding: 'base64' }; }) : Promise.resolve({ content: f.text, encoding: 'utf-8' });
+        return body.then(function (b) { return api(repoPath('/git/blobs'), { method: 'POST', body: JSON.stringify(b) }); })
+          .then(function (r) { f.sha = r.sha; return { path: p, mode: '100644', type: 'blob', sha: r.sha }; });
+      }));
+    }).then(function (tree) {
+      return api(repoPath('/git/trees'), { method: 'POST', body: JSON.stringify({ base_tree: baseTree, tree: tree }) });
+    }).then(function (t) {
+      return api(repoPath('/git/commits'), { method: 'POST', body: JSON.stringify({ message: message, tree: t.sha, parents: [head] }) });
+    }).then(function (c) {
+      return api(repoPath('/git/refs/heads/' + CFG.branch), { method: 'PATCH', body: JSON.stringify({ sha: c.sha }) });
+    }).catch(function (e) {
+      if ((e.status === 422 || e.status === 409) && attempt < 2) return commit(files, message, attempt + 1);
+      throw e;
+    });
+  }
+
+  window.BH = S;
+  boot();
+})();

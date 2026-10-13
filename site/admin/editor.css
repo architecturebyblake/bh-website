@@ -1,0 +1,34 @@
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:'Hanken Grotesk',system-ui,sans-serif;font-size:15px;color:#1C2421;background:#F3F4F1}
+[hidden]{display:none!important}
+.center{min-height:100%;display:flex;align-items:center;justify-content:center;padding:1.5rem}
+.card{max-width:26rem;width:100%;background:#fff;border:1px solid #D3D7D1;padding:2.25rem 2rem;text-align:center}
+.card .logo{width:9rem;height:auto;margin:0 auto 1rem;display:block}
+.card h1{font-family:'Newsreader',Georgia,serif;font-weight:400;font-size:1.75rem;margin:.25rem 0 .75rem}
+.card p{color:#4A5650;line-height:1.5;margin:0 0 1.5rem}
+.msg{color:#9A3412!important;min-height:1.25rem;font-size:.9rem;margin:1rem 0 0!important}
+button{font:inherit;cursor:pointer}
+button.primary{background:#4F6659;color:#fff;border:0;padding:.55rem 1rem;font-weight:500}
+button.primary:hover{background:#3F5448}
+button.primary.big{padding:.8rem 1.5rem;font-size:1rem}
+#app{display:flex;flex-direction:column;height:100%}
+#bar{background:#1C2421;color:#F3F4F1;padding:.5rem .75rem;flex:none}
+#bar .row{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem}
+#bar .spacer{flex:1}
+#bar button{background:transparent;color:#F3F4F1;border:1px solid rgba(243,244,241,.35);padding:.4rem .75rem;font-size:.875rem}
+#bar button:hover{background:rgba(243,244,241,.12)}
+#bar button.primary{background:#7FA08B;border-color:#7FA08B;color:#10231a;font-weight:600}
+#bar button.primary:hover{background:#98b8a3}
+#bar button.danger{border-color:#d98a7a;color:#f2b3a6}
+#bar button.ghost{border-color:transparent;opacity:.75}
+#bar button:disabled{opacity:.4;cursor:default}
+.sel{display:flex;align-items:center;gap:.5rem;font-family:'Poppins',sans-serif;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase}
+.sel select{font:inherit;font-family:'Hanken Grotesk',sans-serif;letter-spacing:0;text-transform:none;font-size:.9rem;padding:.4rem .5rem;background:#F3F4F1;color:#1C2421;border:0;max-width:16rem}
+.grp{display:flex;align-items:center;gap:.4rem;font-family:'Poppins',sans-serif;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase}
+.grp button{padding:.25rem .6rem!important;font-size:1rem!important}
+#status{font-size:.85rem;opacity:.9}
+#tip{font-size:.8rem;opacity:.75;padding:.4rem .1rem 0;line-height:1.4}
+#frame{flex:1;width:100%;border:0;background:#fff;min-height:0}
+
+@media (max-width:700px){#tip{display:none}#bar .row{gap:.35rem}}
