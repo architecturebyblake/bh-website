@@ -29,6 +29,7 @@
     pathToUrl: {},
     deleted: {},          // page name -> true
     undo: [],
+    redo: [],
     frame: null, doc: null, win: null, toolbar: null, selEl: null, busy: false
   };
 
@@ -136,6 +137,7 @@
     $('#btnSave').onclick = save;
     $('#btnOut').onclick = function () { if (dirtyList().length && !confirm('You have changes that are not published. Log out anyway?')) return; logout(); };
     $('#btnUndo').onclick = undo;
+    $('#btnRedo').onclick = redo;
     $('#btnTitle').onclick = editPageTitle;
     $('#btnAdd').onclick = addProject;
     $('#btnMenu').onclick = openMenuDialog;
@@ -194,7 +196,7 @@
     flushCurrent();
     status('Loading…');
     return getHtml(name).then(function (html) {
-      S.current = name; S.undo = [];
+      S.current = name; S.undo = []; S.redo = [];
       fillSelect(name);
       var h = html;
       Object.keys(S.pathToUrl).forEach(function (p) { if (h.indexOf(p) >= 0) h = h.split(p).join(S.pathToUrl[p]); });
@@ -390,12 +392,22 @@
   function snap() {
     var tb = S.toolbar; var sel = S.selEl;
     S.undo.push(S.doc.body.innerHTML); if (S.undo.length > 40) S.undo.shift();
+    S.redo = [];
   }
   function undo() {
     if (!S.doc || !S.undo.length) { status('Nothing to undo.'); return; }
     hideToolbar();
+    S.redo.push(S.doc.body.innerHTML);
     S.doc.body.innerHTML = S.undo.pop();
     markEditable(S.doc); refreshDirty(); status('Undone.');
+    if (S.doc.querySelector('.slide')) slideLabel();
+  }
+  function redo() {
+    if (!S.doc || !S.redo.length) { status('Nothing to redo.'); return; }
+    hideToolbar();
+    S.undo.push(S.doc.body.innerHTML);
+    S.doc.body.innerHTML = S.redo.pop();
+    markEditable(S.doc); refreshDirty(); status('Redone.');
     if (S.doc.querySelector('.slide')) slideLabel();
   }
 
