@@ -152,6 +152,7 @@
   function serializeDoc(doc) {
     var clone = doc.documentElement.cloneNode(true);
     clone.querySelectorAll('[data-ed]').forEach(function (n) { n.remove(); });
+    clone.querySelectorAll('#nl-badge-frame, script[src*="/.netlify/"]').forEach(function (n) { n.remove(); });
     clone.querySelectorAll('*').forEach(function (el) {
       el.removeAttribute('contenteditable');
       Array.prototype.slice.call(el.attributes).forEach(function (a) { if (a.name.indexOf('data-ed') === 0) el.removeAttribute(a.name); });
