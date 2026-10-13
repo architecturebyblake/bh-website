@@ -1,0 +1,51 @@
+{
+  "title": "The New Perspective",
+  "category": "renovations",
+  "order": 3,
+  "cardImage": "/images/uploads/0f59d806b96aae7e079e3002fcfb3bed.jpg",
+  "cardAlt": "Renovated kitchen with walnut-stained cabinets, dark green tile and a center island",
+  "cardCity": "Sinking Spring, PA",
+  "tagline": "Rewriting the plan, revealing the potential.",
+  "heroImage": "/images/uploads/0f59d806b96aae7e079e3002fcfb3bed.jpg",
+  "heroAlt": "Renovated kitchen with walnut-stained cabinets, dark green tile, a center island and a globe chandelier",
+  "paragraphs": [
+    "As part of a whole-house transformation, this kitchen was completely reconfigured to better serve the needs of a mid-century ranch in a modern era. Removed walls opened the layout, improved circulation, and unlocked new possibilities for the surrounding spaces. A former laundry area and breakfast nook were reimagined as a walk-in pantry and pocket office, giving every square foot a renewed sense of purpose.",
+    "Walnut-stained cabinetry brings warmth to the kitchen, set against dark green vertical tile and a granite countertop. A generous island, a gas range, a brass globe chandelier and wide-plank floors give the space a refined, lived-in character, and a pantry and built-in desk add everyday function. The renovation replaced a narrow galley with green walls and white laminate counters."
+  ],
+  "facts": [
+    {
+      "label": "Location",
+      "value": "Berks County, PA"
+    },
+    {
+      "label": "Project type",
+      "value": "Interior Renovation"
+    },
+    {
+      "label": "Year",
+      "value": "2025"
+    },
+    {
+      "label": "Scope",
+      "value": "Design + Renovation"
+    }
+  ],
+  "gallery": [
+    {
+      "image": "/images/uploads/5938dd9c1bfe5f79762a0135330d44db.jpg",
+      "alt": "Renovated kitchen looking toward the sink, with a gas range and island"
+    },
+    {
+      "image": "/images/uploads/589811c8100da009c9cade84f9685ef3.jpg",
+      "alt": "Pantry and built-in desk with a granite top"
+    },
+    {
+      "image": "/images/uploads/9880add56d94a628d6b5152bd9fb1c8a.jpg",
+      "alt": "Before: galley kitchen with green walls, white laminate counters and an electric range"
+    },
+    {
+      "image": "/images/uploads/fc28b0230fc414f2f475d6654a195b65.jpg",
+      "alt": "Before: the kitchen looking toward the doorway, with a white coil range"
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "title": "The Connection",
+  "category": "new-homes",
+  "order": 4,
+  "cardImage": "/images/uploads/afa4c3b97943fc56ada8b59b5f5dfe8e.jpg",
+  "cardAlt": "Two-story home with charcoal siding, stone, standing-seam metal roof and a wraparound porch with cedar posts",
+  "cardCity": "Gladwyne, PA",
+  "tagline": "Distinguishing the joint, preserving the vision.",
+  "heroImage": "/images/uploads/afa4c3b97943fc56ada8b59b5f5dfe8e.jpg",
+  "heroAlt": "Two-story home with charcoal siding, stone, standing-seam metal roof and a wraparound porch with cedar posts",
+  "paragraphs": [
+    "Connecting the existing gymnasium barn to a new residence presented a unique architectural challenge, resolved through a cohesive design that brings both structures together. Above the garage, a private living space offers a sense of separation and retreat, culminating in a third-floor patio with expansive views—a rewarding destination at the top of the home.",
+    "A modern farmhouse composed of dark board-and-batten siding, stone accents, a standing-seam metal roof and timber posts at the covered porch. Inside, light oak floors run throughout, and the kitchen combines a charcoal island, warm wood cabinetry, a brass range hood and black-framed windows. In the great room, a paneled fireplace wall is flanked by oak built-ins with a wine fridge, and a soaring window wall brings in the landscape."
+  ],
+  "facts": [
+    {
+      "label": "Location",
+      "value": "Montgomery County, PA"
+    },
+    {
+      "label": "Project type",
+      "value": "New Home"
+    },
+    {
+      "label": "Year",
+      "value": "2025"
+    },
+    {
+      "label": "Size",
+      "value": "6,633 sq ft"
+    },
+    {
+      "label": "Scope",
+      "value": "Design + Build"
+    }
+  ],
+  "gallery": [
+    {
+      "image": "/images/uploads/f2347580fe34159e9b406ad64554a2f1.jpg",
+      "alt": "Rear of the home under an overcast sky: dark board-and-batten wing with a tall glass bay, timber-framed entry, sage-green wing with metal roof, concrete patio and new landscaping"
+    },
+    {
+      "image": "/images/uploads/ec65c891dc54cf4b6d2db0cbb07ef57b.jpg",
+      "alt": "Primary bath with two wood vanities, brass mirrors and sconces, a central glass shower with patterned tile and black herringbone floor"
+    },
+    {
+      "image": "/images/uploads/226d09c8662cc75bbd89f37fcfcd1208.jpg",
+      "alt": "Open kitchen with walnut cabinetry, charcoal island, brass range hood, built-in glass-front cabinets and a black herringbone-tile column"
+    },
+    {
+      "image": "/images/uploads/4109f3384b0d0909bbe2d6c21da05747.jpg",
+      "alt": "Two-story living room with a tall charcoal paneled fireplace flanked by light oak built-in shelves and a wine fridge"
+    },
+    {
+      "image": "/images/uploads/b6734cbdf862d36ad9939f3381b7885d.jpg",
+      "alt": "Living room with a tall window wall facing mature pines, wide-plank light oak floors, a tall charcoal paneled fireplace with built-in cabinets, and the kitchen beyond"
+    },
+    {
+      "image": "/images/uploads/1cc043d2e67593874ba949787231ee0a.jpg",
+      "alt": "Front of the home: charcoal siding and board-and-batten, two-car garage with green barn lights, stone base, standing-seam metal awning with cedar bracket, and a cedar-post entry beside the sage-green wing"
+    }
+  ]
+}

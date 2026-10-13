@@ -1,0 +1,51 @@
+{
+  "title": "The Hideout",
+  "category": "new-homes",
+  "order": 5,
+  "cardImage": "/images/uploads/bcaeb07d9549072ba60ac48499158589.jpg",
+  "cardAlt": "Modern home with dark vertical siding, a sloped roof and large lit windows in a snowy evergreen forest",
+  "cardCity": "Reading, PA",
+  "tagline": "Illuminating the slope.",
+  "heroImage": "/images/uploads/bcaeb07d9549072ba60ac48499158589.jpg",
+  "heroAlt": "Modern home with dark vertical siding, a sloped roof and large lit windows in a snowy evergreen forest",
+  "paragraphs": [
+    "Set into an overlooked hillside, the Hideout transforms a challenging lot into a distinctive architectural retreat. A contemporary approach and layered wood finishes allow the home to blend naturally into its surroundings, while warm, inviting interiors create a cozy refuge for cool autumn days and long winter nights.",
+    "Dark vertical siding and warm wood soffits define a clean, shed-roofed exterior, with a glass-paneled garage door adding contrast against the snow. Inside, exposed timber beams, wood ceilings, and tall black-framed windows bring warmth and natural light into the double-height living space, framing views of the surrounding evergreens. Natural wood finishes and understated materials carry throughout, creating a cohesive, modern retreat."
+  ],
+  "facts": [
+    {
+      "label": "Location",
+      "value": "Berks County, PA"
+    },
+    {
+      "label": "Project type",
+      "value": "New Home"
+    },
+    {
+      "label": "Year",
+      "value": "2024"
+    },
+    {
+      "label": "Size",
+      "value": "2,900 sq ft"
+    },
+    {
+      "label": "Scope",
+      "value": "Design"
+    }
+  ],
+  "gallery": [
+    {
+      "image": "/images/uploads/950db6c982565c22f9f65062aee281a0.jpg",
+      "alt": "The home at dusk from the driveway: dark horizontal siding, a cedar-lined roof edge, glowing windows and a glass garage door in the snow"
+    },
+    {
+      "image": "/images/uploads/f037563e234f07f467ec97776c0d32f5.jpg",
+      "alt": "Open living room and kitchen with a cedar beamed ceiling, tall black-framed windows onto snowy evergreens, a plaster fireplace and a wood island"
+    },
+    {
+      "image": "/images/uploads/1f45045b65940a27f877b91235d394b7.jpg",
+      "alt": "Primary bathroom with a wood plank ceiling, a floating oak vanity, brass fixtures, a freestanding tub and a glass-enclosed stone shower"
+    }
+  ]
+}

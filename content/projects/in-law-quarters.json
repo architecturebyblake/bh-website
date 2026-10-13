@@ -1,0 +1,49 @@
+{
+  "title": "In-Law Quarters",
+  "category": "additions",
+  "order": 3,
+  "cardImage": "/images/uploads/9655d9cd61beafa3439c7273317d97a0.jpg",
+  "cardAlt": "Two-story home after the addition: wraparound front porch with a black standing-seam metal roof, stone and taupe siding, black shutters and a new gabled wing at left",
+  "cardCity": "Royersford, PA",
+  "tagline": "Designed to be appreciated for generations.",
+  "heroImage": "/images/uploads/9655d9cd61beafa3439c7273317d97a0.jpg",
+  "heroAlt": "Two-story home after the addition: wraparound front porch with a black standing-seam metal roof, stone and taupe siding, black shutters and a new gabled wing at left",
+  "paragraphs": [
+    "Designed to give the parents a home of their own while the next generation takes over the main house, this addition brings both purpose and presence. Thoughtful massing and architectural detailing add visual weight and renewed character, allowing the new structure to feel like a natural evolution of the original home.",
+    "A new gabled wing and extended covered porch blend seamlessly with the existing siding, stone accents, and black-shuttered windows. Inside, the open kitchen features a light granite island with a dark base, pendant lighting, and warm gray cabinetry, flowing into a bright living area with dark hardwood floors, a fireplace, and glass doors opening to the rear yard."
+  ],
+  "facts": [
+    {
+      "label": "Location",
+      "value": "Montgomery County, PA"
+    },
+    {
+      "label": "Project type",
+      "value": "Addition"
+    },
+    {
+      "label": "Year",
+      "value": "2024"
+    },
+    {
+      "label": "Size",
+      "value": "2,088 sq ft"
+    },
+    {
+      "label": "Scope",
+      "value": "Design + Build"
+    }
+  ],
+  "gallery": [
+    {
+      "image": "/images/uploads/d9e9ca5c187efc40a82b903b5d19a427.jpg",
+      "alt": "The same home before the addition: gray siding and stone, a small gabled entry and no porch"
+    },
+    {
+      "image": "/images/uploads/e6b269aca9c52fb877110a948c7e6462.jpg",
+      "alt": "Open kitchen with granite-topped island, pendant lights and a bay window, flowing into a living area with a gas fireplace and sliding doors"
+    }
+  ],
+  "cardBeforeImage": "/images/uploads/d9e9ca5c187efc40a82b903b5d19a427.jpg",
+  "cardBeforeAlt": "The same home before the addition: gray siding and stone, a small gabled entry and no porch"
+}

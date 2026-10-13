@@ -1,0 +1,59 @@
+{
+  "title": "The Gallery House",
+  "category": "new-homes",
+  "order": 2,
+  "cardImage": "/images/uploads/f2f5a09ef40056b7df9a9f63ba733c0c.jpg",
+  "cardAlt": "Stone and shingle-sided home at sunset with lit windows",
+  "cardCity": "Wayne, PA",
+  "tagline": "Designed to show off.",
+  "heroImage": "/images/uploads/f2f5a09ef40056b7df9a9f63ba733c0c.jpg",
+  "heroAlt": "Stone and shingle-sided home at sunset with lit windows",
+  "paragraphs": [
+    "Designed for a family balancing demanding medical careers with a passion for the arts, the Gallery House brings together the needs for connection, creativity, and quiet retreat. Thoughtfully arranged spaces support the rhythms of family life while offering light-filled rooms for artistic expression and quieter corners for rest and solitude.",
+    "Natural stone and dark shingle siding establish a grounded, timeless exterior, while gabled dormers and circular windows introduce subtle architectural character. Inside, wide-plank wood flooring carries through the foyer, where an open staircase pairs a rich dark wood railing with crisp white balusters. A dramatic two-story living room frames the surrounding woodland through a wall of soaring windows, blurring the boundary between indoors and out and reinforcing the home's sense of tranquility."
+  ],
+  "facts": [
+    {
+      "label": "Location",
+      "value": "Delaware County, PA"
+    },
+    {
+      "label": "Project type",
+      "value": "New Home"
+    },
+    {
+      "label": "Year",
+      "value": "2026"
+    },
+    {
+      "label": "Size",
+      "value": "6,165 sq ft"
+    },
+    {
+      "label": "Scope",
+      "value": "Design + Build"
+    }
+  ],
+  "gallery": [
+    {
+      "image": "/images/uploads/1355bb8d262717a9c7e4911032216e40.jpg",
+      "alt": "Entry foyer with a white front door, open staircase with dark wood rail and white balusters, and a hall leading to a bright room"
+    },
+    {
+      "image": "/images/uploads/863449a648e15c94d6fd51668bdc2541.jpg",
+      "alt": "Kitchen with pale gray inset cabinets, a large quartz island, a copper range hood and a built-in stainless refrigerator"
+    },
+    {
+      "image": "/images/uploads/ce715a20160a7579e6d2db281ea4a24f.jpg",
+      "alt": "Two-story living room with a wall of tall windows facing the woods, wall paneling and wide-plank wood floors"
+    },
+    {
+      "image": "/images/uploads/c93c3c8d2621e3dc5676971039fc9b6f.jpg",
+      "alt": "Bedroom with a vaulted ceiling, round window and ceiling fan"
+    },
+    {
+      "image": "/images/uploads/c1fbefb45a180c11a355180c2c3b4910.jpg",
+      "alt": "Primary bath with a soaking tub under a round window, glass shower with patterned tile niche and marble-look floor"
+    }
+  ]
+}

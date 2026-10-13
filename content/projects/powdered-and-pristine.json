@@ -1,0 +1,59 @@
+{
+  "title": "Powdered & Pristine",
+  "category": "renovations",
+  "order": 4,
+  "cardImage": "/images/uploads/19b7a046ac488481fe4a2cb2e1c1eecc.jpg",
+  "cardAlt": "Renovated bathroom with white subway tile, black trim and a black vanity with marble top",
+  "cardCity": "Berks County, PA",
+  "tagline": "Reclaiming character through a classical lens.",
+  "heroImage": "/images/uploads/19b7a046ac488481fe4a2cb2e1c1eecc.jpg",
+  "heroAlt": "Renovated bathroom with white subway tile, black trim, a black vanity with marble top and a herringbone marble floor",
+  "paragraphs": [
+    "One of our earliest projects, this bathroom remains a standout for its attention to detail and appreciation for classical design. Rather than introduce a distinctly modern space into a 1940s red-brick traditional home, the goal was to create a bathroom that felt original to the house—honoring its history while thoughtfully refining it for modern living.",
+    "A classic bathroom finished in white subway tile with black trim and chair rail, a black vanity topped with marble, a chrome faucet, and herringbone marble flooring that continues up the tub wall panel. The original glass doorknob was kept as a detail, and the whole room replaces a dated peach tile finish and yellow checkered floor."
+  ],
+  "facts": [
+    {
+      "label": "Location",
+      "value": "Berks County, PA"
+    },
+    {
+      "label": "Project type",
+      "value": "Interior Renovation"
+    },
+    {
+      "label": "Year",
+      "value": "2021"
+    },
+    {
+      "label": "Scope",
+      "value": "Design + Renovation"
+    }
+  ],
+  "gallery": [
+    {
+      "image": "/images/uploads/4f52dfa199d050bb5de73b9d28170ebb.jpg",
+      "alt": "Vanity with marble top, polished chrome faucet and black tile border"
+    },
+    {
+      "image": "/images/uploads/de7b214834ddacccdb3211f2733e703b.jpg",
+      "alt": "Tub surround in white subway tile with a framed marble herringbone panel"
+    },
+    {
+      "image": "/images/uploads/a0c8bc173451f85d99bb5d482ec7a4a2.jpg",
+      "alt": "Close view of the chrome faucet, glass vase and marble countertop"
+    },
+    {
+      "image": "/images/uploads/2249e04c31a66797f72242b73af7b4ea.jpg",
+      "alt": "Original glass doorknob on a brass backplate beside the tiled tub wall"
+    },
+    {
+      "image": "/images/uploads/8d3dda482251905edc3f7fd07cfb1085.jpg",
+      "alt": "Before: bathroom with peach wall tile, black trim and a pedestal sink"
+    },
+    {
+      "image": "/images/uploads/5ebd9a0aa27f210279d120fa02a03d8e.jpg",
+      "alt": "Before: bathtub with peach wall tile and black floor border"
+    }
+  ]
+}

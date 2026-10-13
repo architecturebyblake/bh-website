@@ -1,0 +1,55 @@
+{
+  "title": "A Refined Classic",
+  "category": "renovations",
+  "order": 1,
+  "cardImage": "/images/uploads/0f743b9beca4d276a9abef65e7ccef12.jpg",
+  "cardAlt": "White shaker kitchen with a marble-look peninsula, glass pendant lights, brass hardware, tile backsplash and stainless range",
+  "cardCity": "Richmond County, NY",
+  "tagline": "Reconfigured and releveled.",
+  "heroImage": "/images/uploads/0f743b9beca4d276a9abef65e7ccef12.jpg",
+  "heroAlt": "White shaker kitchen with a marble-look peninsula, glass pendant lights, brass hardware, tile backsplash and stainless range",
+  "paragraphs": [
+    "In need of a complete kitchen overhaul, this family’s kitchen called for a fresh start. A clean, crisp palette and a brighter, more open layout replaced the outdated space with a kitchen designed around everyday functionality, improved flow, and greater flexibility for the way the family lives.",
+    "The kitchen is finished in crisp white shaker cabinetry with brushed gold hardware, a light quartz countertop and a soft tile backsplash. A professional-style range sits under a stainless hood, with glass pendant lights over the peninsula and a tall, built-in pantry wall with a stainless refrigerator. Warm hardwood floors and unlacquered-look brass faucet details add warmth against the white."
+  ],
+  "facts": [
+    {
+      "label": "Location",
+      "value": "Richmond County, NY"
+    },
+    {
+      "label": "Project type",
+      "value": "Interior Renovation"
+    },
+    {
+      "label": "Year",
+      "value": "2026"
+    },
+    {
+      "label": "Scope",
+      "value": "Design + Renovation"
+    }
+  ],
+  "gallery": [
+    {
+      "image": "/images/uploads/720a032ae7ea0a37101929e86a772a30.jpg",
+      "alt": "Kitchen peninsula with white cabinetry, brass bar pulls, glass pendants and a bouquet, open to the dining area"
+    },
+    {
+      "image": "/images/uploads/51c08a0be343ab27b3511e74654b6dc7.jpg",
+      "alt": "Built-in refrigerator wall with tall white pantry cabinets, microwave niche and handmade-look tile backsplash"
+    },
+    {
+      "image": "/images/uploads/92669ad468f511b7809d6ef8ff1dfffe.jpg",
+      "alt": "Brass pull-down faucet and soap dispenser at an undermount sink beneath a window, with tile backsplash and light stone countertop"
+    },
+    {
+      "image": "/images/uploads/99196426638850d32b260052b5f88a0d.jpg",
+      "alt": "Before: the original kitchen with golden oak cabinets, glass-front uppers, dark green laminate counters and a window over the sink"
+    },
+    {
+      "image": "/images/uploads/0506b2cdd601ce3193922dabad172ab2.jpg",
+      "alt": "Before: wide view of the original kitchen with oak cabinets, green counters, tile floor and a freestanding refrigerator"
+    }
+  ]
+}

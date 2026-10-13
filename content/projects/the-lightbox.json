@@ -1,0 +1,55 @@
+{
+  "title": "The Lightbox",
+  "category": "new-homes",
+  "order": 3,
+  "cardImage": "/images/uploads/3f4428266cb813a29dd1389c5bb0e8da.jpg",
+  "cardAlt": "Two-story home with blue-gray siding and stone entry, lit at dusk with a bluestone walkway",
+  "cardCity": "Quakertown, PA",
+  "tagline": "Function meets individuality.",
+  "heroImage": "/images/uploads/3f4428266cb813a29dd1389c5bb0e8da.jpg",
+  "heroAlt": "Two-story home with blue-gray siding and stone entry, lit at dusk with a bluestone walkway",
+  "paragraphs": [
+    "The Lightbox was conceived as a lasting retreat, designed to evolve alongside its owners for years to come. With space for a close-knit family and their animals, the home balances comfort with thoughtful functionality. A dedicated sunroom anchors the design, positioned to capture maximum daylight and bring the owners’ love of gardening and nature into the heart of the home.",
+    "A bluestone path leads to a welcoming façade of muted green-gray siding, stone accents, and a dark roof. Black-framed windows wrap the sunroom and living areas, minimizing visual barriers and drawing the surrounding landscape into the home."
+  ],
+  "facts": [
+    {
+      "label": "Location",
+      "value": "Bucks County, PA"
+    },
+    {
+      "label": "Project type",
+      "value": "New Home"
+    },
+    {
+      "label": "Year",
+      "value": "2023"
+    },
+    {
+      "label": "Size",
+      "value": "3,223 sq ft"
+    },
+    {
+      "label": "Scope",
+      "value": "Design + Build"
+    }
+  ],
+  "gallery": [
+    {
+      "image": "/images/uploads/aac78b1544588ffafde2766dbdfa02d5.jpg",
+      "alt": "Kitchen with white shaker cabinets, a navy island with granite top, black pendant lights and dark picket-tile backsplash"
+    },
+    {
+      "image": "/images/uploads/a6b655ea888700d8fe571a5398f13431.jpg",
+      "alt": "Glass-enclosed shower with green vertical tile, dual rain heads, built-in bench and pebble floor"
+    },
+    {
+      "image": "/images/uploads/1e8f5d7353a4dbcc7fdcc35d2405245a.jpg",
+      "alt": "Corner sunroom with black-framed windows overlooking a lawn, dark wood floors"
+    },
+    {
+      "image": "/images/uploads/ce9cbeddc7e68fc30b928a4941c32d1a.jpg",
+      "alt": "Open kitchen and living area with granite island, coffered ceiling and stone fireplace with built-in shelves"
+    }
+  ]
+}
