@@ -7,8 +7,8 @@ backend:
 media_folder: images/uploads
 public_folder: /images/uploads
 
-site_url: https://superb-salamander-f7fbea.netlify.app
-display_url: https://superb-salamander-f7fbea.netlify.app
+site_url: https://blakehurstarchitecture.netlify.app
+display_url: https://blakehurstarchitecture.netlify.app
 logo_url: /images/uploads/ce5e5811614ff9664317c23d77206e5a.png
 
 collections:
