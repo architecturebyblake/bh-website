@@ -32,3 +32,21 @@ button.primary.big{padding:.8rem 1.5rem;font-size:1rem}
 #frame{flex:1;width:100%;border:0;background:#fff;min-height:0}
 
 @media (max-width:700px){#tip{display:none}#bar .row{gap:.35rem}}
+
+.modal{position:fixed;inset:0;background:rgba(10,14,12,.6);z-index:50;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:2rem 1rem}
+.modal .box{background:#fff;width:100%;max-width:46rem;padding:1.5rem;border:1px solid #D3D7D1}
+.modal h2{font-family:'Newsreader',Georgia,serif;font-weight:400;font-size:1.5rem;margin:0 0 .25rem}
+.modal .hint{color:#4A5650;font-size:.85rem;margin:0 0 1rem}
+.modal section{border-top:1px solid #D3D7D1;padding:1rem 0}
+.modal input[type=text],.modal select{font:inherit;padding:.45rem .5rem;border:1px solid #B9C0B8;background:#fff;min-width:0}
+.modal .toprow{display:flex;gap:.5rem;margin-bottom:.5rem;flex-wrap:wrap}
+.modal .toplabel{font-weight:600;flex:1;min-width:10rem;text-transform:none}
+.modal .itemrow{display:flex;gap:.4rem;margin:.35rem 0 .35rem 1.25rem;flex-wrap:wrap;align-items:center}
+.modal .itemrow>input{flex:1;min-width:9rem}
+.modal .target{display:inline-flex;gap:.3rem;flex-wrap:wrap}
+.modal .target .url{min-width:12rem}
+.modal button{font:inherit;padding:.4rem .7rem;border:1px solid #B9C0B8;background:#F3F4F1;cursor:pointer}
+.modal button.primary{background:#4F6659;color:#fff;border-color:#4F6659}
+.modal .addrow{margin:.5rem 0 0 1.25rem;border-style:dashed}
+.modal .logorow{border-top:1px solid #D3D7D1;padding:1rem 0;display:flex;gap:.75rem;align-items:center;flex-wrap:wrap}
+.modal .actions{display:flex;justify-content:flex-end;gap:.5rem;border-top:1px solid #D3D7D1;padding-top:1rem}

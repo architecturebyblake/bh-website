@@ -138,6 +138,8 @@
     $('#btnUndo').onclick = undo;
     $('#btnTitle').onclick = editPageTitle;
     $('#btnAdd').onclick = addProject;
+    $('#btnMenu').onclick = openMenuDialog;
+    $('#btnNew').onclick = addPage;
     $('#btnDel').onclick = deleteProject;
     $('#slPrev').onclick = function () { stepSlide(-1); };
     $('#slNext').onclick = function () { stepSlide(1); };
@@ -196,6 +198,7 @@
       fillSelect(name);
       var h = html;
       Object.keys(S.pathToUrl).forEach(function (p) { if (h.indexOf(p) >= 0) h = h.split(p).join(S.pathToUrl[p]); });
+      if (S.menu) h = applyMenuToHtml(h, S.menu, true);
       h = h.replace(/<head([^>]*)>/i, '<head$1><base href="/" data-ed><script data-ed>window.__EDIT__=1<\/script>');
       return new Promise(function (resolve) {
         var f = $('#frame');
@@ -309,6 +312,7 @@
     if (img) el = img;
     else { var tx = t.closest('[data-ed-t]'); if (tx) el = tx; }
     if (!el) { var it = findItem(t); if (it) el = it; }
+    if (!el && a) el = a;
     if (el) select(el); else hideToolbar();
   }
 
@@ -496,6 +500,131 @@
   function stepSlide(d) { var c = curSlide(); setSlide((c.i + d + c.n) % c.n); hideToolbar(); }
   function slideLabel() { var c = curSlide(); $('#slideCtl').hidden = !c.n; $('#slNo').textContent = (c.i + 1) + ' / ' + c.n; }
 
+  // ---------------------------------------------------------------- menu
+  function readMenu(doc) {
+    return Array.prototype.map.call(doc.querySelectorAll('header .nv'), function (nv) {
+      var top = nv.firstElementChild;
+      return {
+        label: top.textContent.trim(),
+        href: top.tagName === 'A' ? top.getAttribute('href') : null,
+        items: Array.prototype.map.call(nv.querySelectorAll('.dd a'), function (a) { return { label: a.textContent.trim(), href: a.getAttribute('href') }; })
+      };
+    });
+  }
+  function applyMenu(doc, m, preview) {
+    var nvs = doc.querySelectorAll('header .nv');
+    (m.groups || []).forEach(function (g, i) {
+      var nv = nvs[i]; if (!nv) return;
+      var top = nv.firstElementChild;
+      top.textContent = g.label;
+      if (top.tagName === 'A' && g.href) top.setAttribute('href', g.href);
+      var dd = nv.querySelector('.dd'); if (!dd) return;
+      var links = dd.querySelectorAll('a');
+      var tpl = links[0] ? links[0].cloneNode(true) : null; if (!tpl) return;
+      links.forEach(function (a) { a.remove(); });
+      g.items.forEach(function (it) {
+        var a = tpl.cloneNode(true); a.textContent = it.label; a.setAttribute('href', it.href); dd.appendChild(a);
+      });
+    });
+    if (m.logoPath) doc.querySelectorAll('header img').forEach(function (im) { im.setAttribute('src', preview && m.logoUrl ? m.logoUrl : m.logoPath); });
+  }
+  function applyMenuToHtml(html, m, preview) {
+    var d = parse(html); applyMenu(d, m, preview);
+    return '<!doctype html>\n' + d.documentElement.outerHTML + '\n';
+  }
+
+  function openMenuDialog() {
+    if (!S.doc || !S.doc.querySelector('header .nv')) { alert('This page has no menu.'); return; }
+    var groups = readMenu(S.doc);
+    var logo = { path: null, url: null };
+    var dlg = document.createElement('div'); dlg.className = 'modal';
+    var box = document.createElement('div'); box.className = 'box';
+    dlg.appendChild(box);
+    var pages = S.files.slice().sort(function (a, b) { return prettyName(a).localeCompare(prettyName(b)); });
+    function pageSelect(href, onchange) {
+      var sel = document.createElement('select');
+      pages.forEach(function (p) { var o = document.createElement('option'); o.value = p; o.textContent = prettyName(p); sel.appendChild(o); });
+      var oth = document.createElement('option'); oth.value = '__other'; oth.textContent = 'Other link…'; sel.appendChild(oth);
+      var inp = document.createElement('input'); inp.type = 'text'; inp.placeholder = 'https://… or mailto:…'; inp.hidden = true; inp.className = 'url';
+      var known = pages.indexOf(href) >= 0;
+      sel.value = known ? href : '__other'; inp.value = known ? '' : href; inp.hidden = known;
+      sel.onchange = function () { inp.hidden = sel.value !== '__other'; onchange(); };
+      inp.oninput = onchange;
+      var w = document.createElement('span'); w.className = 'target'; w.appendChild(sel); w.appendChild(inp);
+      w.get = function () { return sel.value === '__other' ? inp.value.trim() : sel.value; };
+      return w;
+    }
+    function render() {
+      box.innerHTML = '';
+      var h = document.createElement('h2'); h.textContent = 'Edit the menu'; box.appendChild(h);
+      var p = document.createElement('p'); p.className = 'hint'; p.textContent = 'These changes apply to every page of the site.'; box.appendChild(p);
+      groups.forEach(function (g, gi) {
+        var sec = document.createElement('section');
+        var top = document.createElement('div'); top.className = 'toprow';
+        var lab = document.createElement('input'); lab.type = 'text'; lab.value = g.label; lab.className = 'toplabel'; lab.setAttribute('aria-label', 'Menu title');
+        lab.oninput = function () { g.label = lab.value; };
+        top.appendChild(lab);
+        if (g.href !== null) { var t = pageSelect(g.href, function () { g.href = t.get(); }); top.appendChild(t); }
+        sec.appendChild(top);
+        g.items.forEach(function (it, ii) {
+          var row = document.createElement('div'); row.className = 'itemrow';
+          var l = document.createElement('input'); l.type = 'text'; l.value = it.label; l.setAttribute('aria-label', 'Dropdown item name'); l.oninput = function () { it.label = l.value; };
+          var t2 = pageSelect(it.href, function () { it.href = t2.get(); });
+          var up = document.createElement('button'); up.type = 'button'; up.textContent = '↑'; up.title = 'Move up'; up.onclick = function () { if (ii > 0) { g.items.splice(ii - 1, 0, g.items.splice(ii, 1)[0]); render(); } };
+          var dn = document.createElement('button'); dn.type = 'button'; dn.textContent = '↓'; dn.title = 'Move down'; dn.onclick = function () { if (ii < g.items.length - 1) { g.items.splice(ii + 1, 0, g.items.splice(ii, 1)[0]); render(); } };
+          var rm = document.createElement('button'); rm.type = 'button'; rm.textContent = '✕'; rm.title = 'Remove'; rm.onclick = function () { if (g.items.length > 1) { g.items.splice(ii, 1); render(); } else alert('Each menu needs at least one item.'); };
+          [l, t2, up, dn, rm].forEach(function (x) { row.appendChild(x); });
+          sec.appendChild(row);
+        });
+        var add = document.createElement('button'); add.type = 'button'; add.className = 'addrow'; add.textContent = '+ Add an item to this menu';
+        add.onclick = function () { g.items.push({ label: 'New item', href: pages[0] }); render(); };
+        sec.appendChild(add);
+        box.appendChild(sec);
+      });
+      var lg = document.createElement('div'); lg.className = 'logorow';
+      var lb = document.createElement('button'); lb.type = 'button'; lb.textContent = 'Replace the logo at the top'; lb.onclick = function () {
+        var input = $('#file'); input.value = '';
+        input.onchange = function () { var f = input.files && input.files[0]; if (!f) return;
+          prepareImage(f, true).then(function (r) { logo = { path: r.path, url: r.url, blob: r.blob }; note.textContent = 'New logo chosen. It will be used on every page.'; }).catch(function (e) { alert('That image could not be used: ' + e.message); }); };
+        input.click();
+      };
+      var note = document.createElement('span'); note.className = 'hint'; note.textContent = logo.path ? 'New logo chosen.' : 'Use a PNG with a transparent background.';
+      lg.appendChild(lb); lg.appendChild(note); box.appendChild(lg);
+      var act = document.createElement('div'); act.className = 'actions';
+      var cancel = document.createElement('button'); cancel.type = 'button'; cancel.textContent = 'Cancel'; cancel.onclick = function () { dlg.remove(); };
+      var ok = document.createElement('button'); ok.type = 'button'; ok.className = 'primary'; ok.textContent = 'Apply to every page';
+      ok.onclick = function () {
+        var bad = groups.some(function (g) { return !g.label.trim() || g.items.some(function (i) { return !i.label.trim() || !i.href; }); });
+        if (bad) { alert('Every menu title and item needs a name and a link.'); return; }
+        snap();
+        var m = { groups: groups.map(function (g) { return { label: g.label.trim(), href: g.href, items: g.items.map(function (i) { return { label: i.label.trim(), href: i.href }; }) }; }) };
+        if (logo.path) { m.logoPath = logo.path; m.logoUrl = logo.url; S.pending[logo.path] = logo.blob; S.urlToPath[logo.url] = logo.path; S.pathToUrl[logo.path] = logo.url; }
+        S.menu = m; applyMenu(S.doc, m, true); markEditable(S.doc);
+        refreshDirty(); dlg.remove(); status('Menu updated on every page. Save & publish to make it live.');
+      };
+      act.appendChild(cancel); act.appendChild(ok); box.appendChild(act);
+    }
+    render(); document.body.appendChild(dlg);
+  }
+
+  function addPage() {
+    var name = prompt('Name of the new page (for example: Careers):');
+    if (!name || !name.trim()) return; name = name.trim();
+    var slug = slugify(name); if (!slug) { alert('Please use letters or numbers in the name.'); return; }
+    var file = slug + '.html';
+    if (S.files.indexOf(file) >= 0 || S.pages[file]) { alert('A page called "' + file + '" already exists.'); return; }
+    var tplName = S.files.indexOf('Design.html') >= 0 ? 'Design.html' : 'Contact.html';
+    getHtml(tplName).then(function (tpl) {
+      var d = parse(tpl);
+      var t = d.querySelector('title'); if (t) t.textContent = name + ' | Blake Hurst Architectural Design';
+      var m = d.querySelector('meta[name="description"]'); if (m) m.setAttribute('content', name + ' | Blake Hurst Architectural Design, Reading, PA.');
+      var h1 = d.querySelector('main h1'); if (h1) h1.textContent = name;
+      S.pages[file] = { html: '<!doctype html>\n' + d.documentElement.outerHTML + '\n', baseline: '', isNew: true, loaded: true };
+      S.files.push(file);
+      return openPage(file).then(function () { status('New page created. Add it to the menu with "Edit menu", then Save & publish.'); });
+    }).catch(function (e) { alert(e.message); });
+  }
+
   // ---------------------------------------------------------------- projects
   function projectListing(doc) {
     var a = doc.querySelector('main > a[href$=".html"]');
@@ -565,7 +694,7 @@
     if (S.busy) return;
     var dirty = dirtyList();
     var del = Object.keys(S.deleted);
-    if (!dirty.length && !del.length) { status('Nothing to publish. No changes yet.'); return; }
+    if (!dirty.length && !del.length && !S.menu) { status('Nothing to publish. No changes yet.'); return; }
     // warn about new pages still using the template's photo
     var warn = dirty.filter(function (n) { var p = S.pages[n]; return p.isNew && p.tplImg && p.html.indexOf(p.tplImg) >= 0; });
     if (warn.length && !confirm('A new project page still shows another project\'s photos. Publish anyway?')) return;
@@ -580,17 +709,22 @@
     });
     del.forEach(function (n) { files[CFG.root + '/' + n] = null; });
     var chain = Promise.resolve();
-    if (footerNew) {
-      // footer text is shared by every page: copy the edited footer everywhere
+    var menu = S.menu;
+    function transform(html) {
+      if (footerNew) html = html.replace(/<footer[\s\S]*?<\/footer>/i, function () { return footerNew; });
+      if (menu) html = applyMenuToHtml(html, menu, false);
+      return html;
+    }
+    if (footerNew || menu) {
       chain = chain.then(function () {
         var others = S.files.filter(function (n) { return !files[CFG.root + '/' + n] && !S.deleted[n]; });
-        status('Updating the footer on every page…');
+        status('Updating ' + (menu ? 'the menu' : 'the footer') + ' on every page…');
         return Promise.all(others.map(function (n) {
           return api(repoPath('/contents/' + CFG.root + '/' + encodeURIComponent(n) + '?ref=' + CFG.branch), { headers: { Accept: 'application/vnd.github.raw+json' }, raw: true }).then(function (txt) {
-            if (footerOf(txt)) files[CFG.root + '/' + n] = { text: txt.replace(/<footer[\s\S]*?<\/footer>/i, function () { return footerNew; }) };
+            files[CFG.root + '/' + n] = { text: transform(txt) };
           });
         })).then(function () {
-          dirty.forEach(function (n) { var p = S.pages[n]; if (footerOf(p.html)) { p.html = p.html.replace(/<footer[\s\S]*?<\/footer>/i, function () { return footerNew; }); files[CFG.root + '/' + n] = { text: p.html }; } });
+          dirty.forEach(function (n) { var p = S.pages[n]; p.html = transform(p.html); files[CFG.root + '/' + n] = { text: p.html }; });
         });
       });
     }
@@ -603,6 +737,7 @@
       dirty.forEach(function (n) { var p = S.pages[n]; p.baseline = p.html; p.isNew = false; });
       del.forEach(function (n) { delete S.deleted[n]; });
       Object.keys(S.pending).forEach(function (p) { if (files[CFG.root + '/' + p]) { /* keep url mapping so open pages still display */ } });
+      if (menu) { S.menu = null; Object.keys(S.pages).forEach(function (n) { var p = S.pages[n]; if (S.deleted[n]) return; if (dirty.indexOf(n) < 0) p.html = applyMenuToHtml(p.html, menu, false); p.baseline = p.html; }); }
       if (footerNew) Object.keys(S.pages).forEach(function (n) { var p = S.pages[n]; if (S.deleted[n]) return; ['html', 'baseline'].forEach(function (k) { if (p[k] && footerOf(p[k])) p[k] = p[k].replace(/<footer[\s\S]*?<\/footer>/i, function () { return footerNew; }); }); });
       refreshDirty(); fillSelect();
       status('Published. Your live site updates in about a minute.');
