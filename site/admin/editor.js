@@ -66,7 +66,7 @@
 
   function login() {
     return new Promise(function (resolve, reject) {
-      var site = location.host.split(':')[0];
+      var site = 'blakehurstarchitecture.netlify.app'; // Netlify only handles the GitHub sign-in handshake; the site itself is hosted on GitHub Pages
       var url = 'https://api.netlify.com/auth?provider=github&site_id=' + encodeURIComponent(site) + '&scope=repo';
       var w = window.open(url, 'bh-auth', 'width=620,height=760');
       if (!w) { reject(new Error('Your browser blocked the login window. Allow pop-ups for this site and try again.')); return; }
