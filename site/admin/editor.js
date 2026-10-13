@@ -186,9 +186,10 @@
   // ---------------------------------------------------------------- page loading
   function getHtml(name) {
     if (S.pages[name]) return Promise.resolve(S.pages[name].html);
-    return fetch('/' + name, { cache: 'no-store' }).then(function (r) {
-      if (!r.ok) throw new Error('Could not load ' + name);
-      return r.text();
+    // read the page straight from GitHub (never from the live site, which a host may rewrite)
+    return api(repoPath('/contents/' + CFG.root + '/' + encodeURIComponent(name) + '?ref=' + CFG.branch), { headers: { Accept: 'application/vnd.github.raw+json' }, raw: true }).then(function (t) {
+      if (typeof t !== 'string') throw new Error('Could not load ' + name);
+      return t;
     }).then(function (t) { S.pages[name] = { html: t, baseline: t, isNew: false, loaded: false }; return t; });
   }
 
