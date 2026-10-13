@@ -50,3 +50,9 @@ button.primary.big{padding:.8rem 1.5rem;font-size:1rem}
 .modal .addrow{margin:.5rem 0 0 1.25rem;border-style:dashed}
 .modal .logorow{border-top:1px solid #D3D7D1;padding:1rem 0;display:flex;gap:.75rem;align-items:center;flex-wrap:wrap}
 .modal .actions{display:flex;justify-content:flex-end;gap:.5rem;border-top:1px solid #D3D7D1;padding-top:1rem}
+
+.cropframe{position:relative;overflow:hidden;margin:0 auto 1rem;background:#1C2421;cursor:grab;touch-action:none;outline:1px solid #D3D7D1}
+.cropframe:active{cursor:grabbing}
+.cropimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;user-select:none;-webkit-user-drag:none;pointer-events:none}
+.croprow{display:flex;gap:1rem;align-items:center;justify-content:center;flex-wrap:wrap;margin-bottom:1rem}
+.croprow input[type=range]{vertical-align:middle;width:12rem}

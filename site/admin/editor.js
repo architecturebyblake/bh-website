@@ -361,6 +361,7 @@
     var link = el.closest && el.closest('a');
     if (isImgLike(el)) {
       tb.appendChild(btn('Replace photo', function () { replacePhoto(el); }));
+      if (canCrop(el)) tb.appendChild(btn('Crop / zoom', function () { openCrop(el); }));
       tb.appendChild(btn('Describe photo', function () { describePhoto(el); }));
     }
     if (link && link.getAttribute('href')) {
@@ -483,6 +484,146 @@
       });
     });
   }
+
+  // ---------------------------------------------------------------- crop / zoom
+  function canCrop(el) {
+    if (el.tagName === 'IMG') { var cs = S.win.getComputedStyle(el); return cs.objectFit === 'cover' && !!(el.offsetWidth && el.offsetHeight); }
+    return !!bgUrl(el);
+  }
+  function parseCrop(el) {
+    var d = (el.getAttribute('data-crop') || '').split(',').map(Number);
+    if (d.length >= 3 && d.every(function (x) { return isFinite(x); })) return { z: d[0], px: d[1], py: d[2], ratio: d[3] || 0 };
+    var st = el.style, pos = (el.tagName === 'IMG' ? st.objectPosition : st.backgroundPosition) || '';
+    var m = /(-?[\d.]+)%\s+(-?[\d.]+)%/.exec(pos);
+    return { z: 1, px: m ? +m[1] : 50, py: m ? +m[2] : 50, ratio: 0 };
+  }
+  function openCrop(el) {
+    var isImg = el.tagName === 'IMG';
+    var cs = S.win.getComputedStyle(el);
+    var par = isImg ? el.parentElement : null;
+    var gallery = isImg && cs.position !== 'absolute' && /aspect-ratio/.test(el.getAttribute('style') || '');
+    var clipped = false; for (var a = par; a && a !== S.doc.body && !clipped; a = a.parentElement) { if (S.win.getComputedStyle(a).overflow !== 'visible') clipped = true; }
+    var canZoom = isImg && (gallery || clipped);
+    var st = parseCrop(el);
+    var srcAttr = isImg ? (el.getAttribute('data-orig') || el.getAttribute('src')) : bgUrl(el).replace(/^["']|["']$/g, '');
+    var origPath = S.urlToPath[srcAttr] || srcAttr;
+    var origUrl = S.pathToUrl[origPath] || srcAttr;
+    var shownUrl = /^(blob:|data:|https?:|\/)/.test(origUrl) ? origUrl : '/' + origUrl;
+    var baseRatio = el.offsetWidth / el.offsetHeight;
+    var ratios = [['Keep as is', 0], ['Wide 16:9', 16 / 9], ['Landscape 3:2', 3 / 2], ['Classic 4:3', 4 / 3], ['Square 1:1', 1], ['Portrait 3:4', 3 / 4]];
+    var m = { z: Math.max(1, st.z), px: st.px, py: st.py, ratio: gallery ? st.ratio : 0 };
+
+    var dlg = document.createElement('div'); dlg.className = 'modal';
+    var box = document.createElement('div'); box.className = 'box'; dlg.appendChild(box);
+    box.innerHTML = '<h2>Crop and zoom</h2><p class="hint">Drag the photo to choose what shows. ' + (canZoom ? 'Use the slider to zoom in.' : '') + '</p>';
+    var frame = document.createElement('div'); frame.className = 'cropframe';
+    var pic = document.createElement('img'); pic.className = 'cropimg'; pic.alt = ''; pic.draggable = false; pic.src = shownUrl;
+    frame.appendChild(pic); box.appendChild(frame);
+    var row = document.createElement('div'); row.className = 'croprow';
+    var zin, zl, shape;
+    if (canZoom) {
+      zl = document.createElement('label'); zl.textContent = 'Zoom ';
+      zin = document.createElement('input'); zin.type = 'range'; zin.min = 100; zin.max = 300; zin.step = 5; zin.value = Math.round(m.z * 100);
+      zl.appendChild(zin); row.appendChild(zl);
+    }
+    if (gallery) {
+      var sl = document.createElement('label'); sl.textContent = 'Shape ';
+      shape = document.createElement('select');
+      ratios.forEach(function (r) { var o = document.createElement('option'); o.value = r[1]; o.textContent = r[0]; shape.appendChild(o); });
+      var best = 0; ratios.forEach(function (r) { if (Math.abs(r[1] - m.ratio) < 0.01) best = r[1]; }); shape.value = String(best);
+      sl.appendChild(shape); row.appendChild(sl);
+    }
+    var rs = document.createElement('button'); rs.type = 'button'; rs.textContent = 'Reset'; row.appendChild(rs);
+    box.appendChild(row);
+    var act = document.createElement('div'); act.className = 'actions';
+    var cancel = document.createElement('button'); cancel.type = 'button'; cancel.textContent = 'Cancel';
+    var ok = document.createElement('button'); ok.type = 'button'; ok.className = 'primary'; ok.textContent = 'Apply';
+    act.appendChild(cancel); act.appendChild(ok); box.appendChild(act);
+    document.body.appendChild(dlg);
+
+    function ratioNow() { return (gallery && m.ratio) ? m.ratio : baseRatio; }
+    function dims() { return { W: pic.naturalWidth || 1, H: pic.naturalHeight || 1 }; }
+    function layout() {
+      var r = ratioNow(), maxW = Math.min(640, box.clientWidth - 48), maxH = window.innerHeight * 0.55;
+      var w = Math.min(maxW, maxH * r), h = w / r;
+      frame.style.width = w + 'px'; frame.style.height = h + 'px';
+      pic.style.objectPosition = m.px + '% ' + m.py + '%';
+      pic.style.transformOrigin = m.px + '% ' + m.py + '%';
+      pic.style.transform = m.z > 1 ? 'scale(' + m.z + ')' : 'none';
+    }
+    function range() {
+      var d = dims(), F = { w: frame.clientWidth, h: frame.clientHeight }, c = Math.max(F.w / d.W, F.h / d.H);
+      return { x: m.z * d.W * c - F.w, y: m.z * d.H * c - F.h };
+    }
+    var drag = null;
+    frame.addEventListener('pointerdown', function (e) { frame.setPointerCapture(e.pointerId); drag = { x: e.clientX, y: e.clientY, px: m.px, py: m.py }; });
+    frame.addEventListener('pointermove', function (e) {
+      if (!drag) return; var rg = range();
+      if (rg.x > 1) m.px = Math.max(0, Math.min(100, drag.px - (e.clientX - drag.x) / rg.x * 100));
+      if (rg.y > 1) m.py = Math.max(0, Math.min(100, drag.py - (e.clientY - drag.y) / rg.y * 100));
+      layout();
+    });
+    frame.addEventListener('pointerup', function () { drag = null; });
+    if (zin) zin.oninput = function () { m.z = zin.value / 100; layout(); };
+    if (shape) shape.onchange = function () { m.ratio = parseFloat(shape.value) || 0; layout(); };
+    rs.onclick = function () { m.z = 1; m.px = 50; m.py = 50; m.ratio = 0; if (zin) zin.value = 100; if (shape) shape.value = '0'; layout(); };
+    function close() { dlg.remove(); }
+    cancel.onclick = close;
+    dlg.addEventListener('mousedown', function (e) { if (e.target === dlg) close(); });
+    pic.onload = layout; layout();
+
+    ok.onclick = function () {
+      var px = Math.round(m.px * 10) / 10, py = Math.round(m.py * 10) / 10, z = m.z;
+      var d = dims(), r = ratioNow();
+      var bake = gallery && (z > 1);
+      snap();
+      var pos = px + '% ' + py + '%';
+      var unchanged = z === 1 && px === 50 && py === 50 && !m.ratio;
+      function finish(extra) {
+        if (gallery) {
+          if (m.ratio) el.style.aspectRatio = Math.round(m.ratio * 1000) + ' / 1000'; else if (st.ratio) el.style.aspectRatio = '';
+        }
+        if (unchanged && !bake) { el.removeAttribute('data-crop'); } else { el.setAttribute('data-crop', [z, px, py, m.ratio || 0].join(',')); }
+        if (extra) extra();
+        close(); refreshDirty(); placeToolbar(); status('Crop applied. Remember to Save & publish.');
+      }
+      if (!isImg) { el.style.backgroundPosition = pos; finish(); return; }
+      if (!bake) {
+        // CSS-only: restore the original file if an earlier crop baked one in
+        finish(function () {
+          if (el.hasAttribute('data-orig')) { el.setAttribute('src', origUrl); el.removeAttribute('data-orig'); }
+          el.style.objectPosition = pos;
+          if (z > 1) { el.style.transformOrigin = pos; el.style.transform = 'scale(' + z + ')'; } else { el.style.transform = ''; el.style.transformOrigin = ''; }
+          if (unchanged) { el.style.objectPosition = ''; }
+        });
+        return;
+      }
+      status('Cropping…');
+      fetch(shownUrl).then(function (x) { return x.blob(); }).then(function (b) { return createImageBitmap(b, { imageOrientation: 'from-image' }); }).then(function (bmp) {
+        var F = { w: 1000, h: 1000 / r }, c = Math.max(F.w / bmp.width, F.h / bmp.height);
+        var dw = bmp.width * c, dh = bmp.height * c;
+        var L = m.px / 100 * (F.w - z * dw), T = m.py / 100 * (F.h - z * dh);
+        var k = Math.min(1 / (c * z), 2200 / F.w);
+        var cv = document.createElement('canvas'); cv.width = Math.round(F.w * k); cv.height = Math.round(F.h * k);
+        var ctx = cv.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
+        ctx.drawImage(bmp, L * k, T * k, z * dw * k, z * dh * k);
+        return new Promise(function (res, rej) {
+          cv.toBlob(function (bl) {
+            if (!bl) { rej(new Error('could not crop the picture')); return; }
+            var id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+            res({ blob: bl, path: 'images/uploads/' + id + '.jpg', url: URL.createObjectURL(bl) });
+          }, 'image/jpeg', 0.88);
+        });
+      }).then(function (n) {
+        S.pending[n.path] = n.blob; S.urlToPath[n.url] = n.path; S.pathToUrl[n.path] = n.url;
+        finish(function () {
+          el.removeAttribute('srcset'); el.setAttribute('data-orig', origPath); el.setAttribute('src', n.url);
+          el.style.objectPosition = ''; el.style.transform = ''; el.style.transformOrigin = '';
+        });
+      }).catch(function (e) { status('', ''); alert('That photo could not be cropped: ' + e.message); });
+    };
+  }
+
   function describePhoto(el) {
     var key = el.tagName === 'IMG' ? 'alt' : 'aria-label';
     var v = prompt('Describe this photo in a short sentence. It helps people who use screen readers and helps Google.', el.getAttribute(key) || '');
