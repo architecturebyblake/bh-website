@@ -246,6 +246,7 @@
     var tb = doc.createElement('div'); tb.id = 'edtb'; tb.setAttribute('data-ed', ''); tb.hidden = true;
     doc.documentElement.appendChild(tb); S.toolbar = tb;
     doc.addEventListener('click', onClick, true);
+    doc.addEventListener('dblclick', onDblClick, true);
     doc.addEventListener('keydown', onKey, true);
     doc.addEventListener('paste', onPaste, true);
     doc.addEventListener('input', function () { refreshDirty(); }, true);
@@ -293,6 +294,22 @@
     if (!href) return null;
     var h = href.split('#')[0].split('?')[0].replace(/^\//, '');
     return /^[^\/:]+\.html$/.test(h) ? h : null;
+  }
+  function onDblClick(e) {
+    var t = e.target;
+    if (t.closest && (t.closest('[data-ed]') || t.closest('header,.dd') || t.closest('[data-ed-t]'))) return;
+    var stack = S.doc.elementsFromPoint(e.clientX, e.clientY), el = null;
+    for (var i = 0; i < stack.length && !el; i++) {
+      var c = stack[i];
+      if (c.closest && c.closest('[data-ed-t]')) return;
+      var sl = c.closest && c.closest('.slide');
+      if (sl && !sl.classList.contains('on')) continue;
+      if (c.hasAttribute && c.hasAttribute('data-ed-i') && canCrop(c)) el = c;
+    }
+    if (!el) return;
+    e.preventDefault(); e.stopPropagation();
+    var sel = S.win.getSelection && S.win.getSelection(); if (sel) sel.removeAllRanges();
+    select(el); openCrop(el);
   }
   function onClick(e) {
     var t = e.target;
