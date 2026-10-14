@@ -12,10 +12,19 @@
 <body>
 <div id="login" class="center">
   <div class="card">
-    <img src="/images/uploads/ce5e5811614ff9664317c23d77206e5a.png" alt="Blake Hurst Architectural Design" class="logo">
+    <img src="../images/uploads/ce5e5811614ff9664317c23d77206e5a.png" alt="Blake Hurst Architectural Design" class="logo">
     <h1>Edit your website</h1>
-    <p>Sign in with your GitHub account. Then click any text or photo on your real pages to change it.</p>
-    <button id="btnLogin" class="primary big">Log in with GitHub</button>
+    <p>Click any text or photo on your real pages to change it. Sign in once with a GitHub access token. This browser will remember it.</p>
+    <details class="how"><summary>How do I get a token?</summary>
+      <ol>
+        <li>Open <a target="_blank" rel="noopener" href="https://github.com/settings/personal-access-tokens/new?name=Website+editor&description=Edit+the+Blake+Hurst+website&expires_in=365&contents=write">this GitHub page</a> (log in if asked).</li>
+        <li>Under <b>Repository access</b>, choose <b>Only select repositories</b> and pick <b>bh-website</b>.</li>
+        <li>Under <b>Permissions</b>, open <b>Repository permissions</b> and set <b>Contents</b> to <b>Read and write</b> (it may already be filled in).</li>
+        <li>Click <b>Generate token</b>, copy it, and paste it below.</li>
+      </ol>
+    </details>
+    <input id="tokenIn" type="password" autocomplete="off" spellcheck="false" placeholder="Paste your token here">
+    <button id="btnLogin" class="primary big">Sign in</button>
     <p id="loginMsg" class="msg"></p>
   </div>
 </div>

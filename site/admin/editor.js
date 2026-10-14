@@ -1,6 +1,6 @@
 /* Visual editor for the Blake Hurst website.
  * Loads the real pages in a frame, lets you edit text/photos in place, and
- * publishes all changes to GitHub in one commit (Netlify then rebuilds the site).
+ * publishes all changes to GitHub in one commit (GitHub then rebuilds the site).
  */
 (function () {
   'use strict';
@@ -19,7 +19,7 @@
   var LISTINGS = ['NewHomes.html', 'Additions.html', 'Renovations.html'];
 
   var token = null;
-  try { token = sessionStorage.getItem('bh_token'); } catch (e) {}
+  try { token = localStorage.getItem('bh_token') || sessionStorage.getItem('bh_token'); } catch (e) {}
   var S = {
     files: [],            // html page names in the repo (and staged new ones)
     pages: {},            // name -> { html, baseline, isNew }
@@ -64,29 +64,22 @@
   }
   var repoPath = function (p) { return '/repos/' + CFG.owner + '/' + CFG.repo + p; };
 
-  function login() {
-    return new Promise(function (resolve, reject) {
-      var site = 'blakehurstarchitecture.netlify.app'; // Netlify only handles the GitHub sign-in handshake; the site itself is hosted on GitHub Pages
-      var url = 'https://api.netlify.com/auth?provider=github&site_id=' + encodeURIComponent(site) + '&scope=repo';
-      var w = window.open(url, 'bh-auth', 'width=620,height=760');
-      if (!w) { reject(new Error('Your browser blocked the login window. Allow pop-ups for this site and try again.')); return; }
-      var done = false;
-      function onMsg(e) {
-        if (e.origin !== 'https://api.netlify.com') return;
-        if (e.data === 'authorizing:github') { w.postMessage('authorizing:github', e.origin); return; }
-        var m = typeof e.data === 'string' && /^authorization:github:(success|error):([\s\S]*)$/.exec(e.data);
-        if (!m) return;
-        done = true; window.removeEventListener('message', onMsg);
-        try { w.close(); } catch (x) {}
-        if (m[1] === 'success') { try { resolve(JSON.parse(m[2]).token); } catch (x) { reject(new Error('Login failed.')); } }
-        else reject(new Error('GitHub did not allow the login.'));
-      }
-      window.addEventListener('message', onMsg);
-      var t = setInterval(function () { if (w.closed) { clearInterval(t); if (!done) { window.removeEventListener('message', onMsg); reject(new Error('Login window was closed.')); } } }, 600);
+  // Sign-in uses a GitHub access token that the owner pastes once (no third-party service involved).
+  function checkToken(t) {
+    t = (t || '').replace(/\s+/g, '');
+    if (!t) return Promise.reject(new Error('Paste your GitHub token first.'));
+    return fetch(API + '/repos/' + CFG.owner + '/' + CFG.repo, { headers: { Authorization: 'Bearer ' + t, Accept: 'application/vnd.github+json' } }).then(function (r) {
+      if (r.status === 401) throw new Error('GitHub did not accept that token. Check that you copied all of it, or make a new one.');
+      if (r.status === 404) throw new Error('That token cannot see the website. When you create it, choose "Only select repositories" and pick bh-website.');
+      if (!r.ok) throw new Error('GitHub said: ' + r.status + '. Try again in a minute.');
+      return r.json();
+    }).then(function (repo) {
+      if (!repo.permissions || !repo.permissions.push) throw new Error('That token can only read the website. Create one with Contents set to "Read and write".');
+      return t;
     });
   }
   function logout() {
-    try { sessionStorage.removeItem('bh_token'); } catch (e) {}
+    try { sessionStorage.removeItem('bh_token'); localStorage.removeItem('bh_token'); } catch (e) {}
     token = null; location.reload();
   }
 
@@ -94,11 +87,15 @@
   function boot() {
     $('#btnLogin').onclick = function () {
       $('#loginMsg').textContent = '';
-      login().then(function (t) {
-        token = t; try { sessionStorage.setItem('bh_token', t); } catch (e) {}
+      $('#btnLogin').disabled = true;
+      checkToken($('#tokenIn').value).then(function (t) {
+        token = t;
+        try { localStorage.setItem('bh_token', t); } catch (e) { try { sessionStorage.setItem('bh_token', t); } catch (x) {} }
+        $('#tokenIn').value = '';
         return start();
-      }).catch(function (e) { $('#loginMsg').textContent = e.message; });
+      }).catch(function (e) { $('#loginMsg').textContent = e.message; }).then(function () { $('#btnLogin').disabled = false; });
     };
+    $('#tokenIn').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('#btnLogin').click(); });
     if (token) start().catch(function (e) { $('#loginMsg').textContent = e.message; $('#login').hidden = false; $('#app').hidden = true; });
   }
 

@@ -56,3 +56,8 @@ button.primary.big{padding:.8rem 1.5rem;font-size:1rem}
 .cropimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;user-select:none;-webkit-user-drag:none;pointer-events:none}
 .croprow{display:flex;gap:1rem;align-items:center;justify-content:center;flex-wrap:wrap;margin-bottom:1rem}
 .croprow input[type=range]{vertical-align:middle;width:12rem}
+
+#tokenIn{display:block;width:100%;box-sizing:border-box;font:inherit;padding:.7rem .8rem;margin:1rem 0 .75rem;border:1px solid #B9C0B8;background:#fff}
+.how{margin:1rem 0 0;font-size:.9rem;text-align:left}
+.how summary{cursor:pointer;color:#4F6659}
+.how ol{margin:.6rem 0 0;padding-left:1.2rem;line-height:1.5}
