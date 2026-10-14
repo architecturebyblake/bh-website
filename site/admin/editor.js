@@ -75,9 +75,15 @@
       return r.json();
     }).then(function (repo) {
       if (!repo.permissions || !repo.permissions.push) throw new Error('That token can only read the website. Create one with Contents set to "Read and write".');
-      return t;
+      // GitHub reports the owner's rights here, not the token's, so test a harmless write (an empty file object that is never used).
+      return fetch(API + '/repos/' + CFG.owner + '/' + CFG.repo + '/git/blobs', { method: 'POST', headers: { Authorization: 'Bearer ' + t, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' }, body: JSON.stringify({ content: '', encoding: 'utf-8' }) }).then(function (w) {
+        if (w.status === 403 || w.status === 404) throw new Error(READONLY_MSG);
+        if (!w.ok && w.status !== 422) throw new Error('GitHub said: ' + w.status + '. Try again in a minute.');
+        return t;
+      });
     });
   }
+  var READONLY_MSG = 'That token can only read the website, so it cannot save changes. In GitHub, open Settings > Developer settings > Personal access tokens > Fine-grained tokens, click your token, choose Edit, and set Contents to "Read and write".';
   function logout() {
     try { sessionStorage.removeItem('bh_token'); localStorage.removeItem('bh_token'); } catch (e) {}
     token = null; location.reload();
@@ -911,7 +917,7 @@
       refreshDirty(); fillSelect();
       status('Published. Your live site updates in about a minute.');
     }).catch(function (e) {
-      status('', ''); alert('Could not publish: ' + (e.message || e).toString().slice(0, 300));
+      status('', ''); alert(/not accessible by personal access token|Resource not accessible/i.test(String(e && e.message || e)) ? READONLY_MSG + ' Your changes are still here, so click Save & publish again afterward.' : 'Could not publish: ' + (e.message || e).toString().slice(0, 300));
     }).then(function () { S.busy = false; $('#btnSave').disabled = false; refreshDirty(); });
   }
 
